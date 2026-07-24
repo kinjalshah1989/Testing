@@ -434,6 +434,18 @@
   let currentPage = 1;
   let visibleCount = PAGE_SIZE;
   const productRegistry = new Map();
+  const mediaRefreshToken = Date.now();
+  const refreshMediaUrl = value => {
+    const raw = String(value || '').trim();
+    if (!raw) return '';
+    try {
+      const url = new URL(raw, window.location.href);
+      url.searchParams.set('_grmedia', String(mediaRefreshToken));
+      return url.toString();
+    } catch (_) {
+      return raw + (raw.includes('?') ? '&' : '?') + '_grmedia=' + mediaRefreshToken;
+    }
+  };
 
   const fallbackProducts = [
     { id:'maharani-manika-topaz-set', name:'Maharani Manika Topaz Set', description:'A regal topaz-toned statement set with matching earrings.', price:1, images:[1,2,3].map(n=>CDN+`maharani-manika-topaz-set-${n}.png`), arImage:CDN+'maharani-manika-topaz-set-ar.png', boxGif:CDN+'maharani-manika-topaz-jewelry-box-opening.gif' },
@@ -459,8 +471,8 @@
       price: Number(raw.price ?? raw.priceUSD ?? 85) || 85,
       images,
       image: images[0] || '',
-      arImage: raw.arImage || '',
-      boxGif: raw.boxGif || ''
+      arImage: refreshMediaUrl(raw.arImage),
+      boxGif: refreshMediaUrl(raw.boxGif)
     };
   }
 

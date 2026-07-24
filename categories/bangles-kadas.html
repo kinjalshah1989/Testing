@@ -434,6 +434,18 @@
   let currentPage = 1;
   let visibleCount = PAGE_SIZE;
   const productRegistry = new Map();
+  const mediaRefreshToken = Date.now();
+  const refreshMediaUrl = value => {
+    const raw = String(value || '').trim();
+    if (!raw) return '';
+    try {
+      const url = new URL(raw, window.location.href);
+      url.searchParams.set('_grmedia', String(mediaRefreshToken));
+      return url.toString();
+    } catch (_) {
+      return raw + (raw.includes('?') ? '&' : '?') + '_grmedia=' + mediaRefreshToken;
+    }
+  };
 
   const fallbackProducts = [];
 
@@ -455,8 +467,8 @@
       price: Number(raw.price ?? raw.priceUSD ?? 45) || 45,
       images: images.length ? images : fallbackImages,
       image: (images.length ? images[0] : fallbackImages[0]),
-      arImage: raw.arImage || '',
-      boxGif: raw.boxGif || `${CDN}${encodeURIComponent(baseId)}-box-opening.gif`
+      arImage: refreshMediaUrl(raw.arImage),
+      boxGif: refreshMediaUrl(raw.boxGif)
     };
   }
 

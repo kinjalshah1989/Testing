@@ -4735,6 +4735,7 @@
 <h3 class="inventory-product-name" id="inventoryProductName">Global Rani Jewelry</h3>
 <p class="inventory-product-price" id="inventoryProductPrice">$45.00</p>
 <button class="inventory-product-add" id="inventoryProductAdd" type="button">Add to Cart</button>
+<button class="inventory-product-add" id="inventoryProductTryOn" type="button">Try It On</button>
 </article></div>
 
 <section id="ugc">
@@ -5450,7 +5451,9 @@
       const id = String(product.id || product.name || 'royal-drop').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
       const name = String(product.name || 'Royal Drop');
       const price = Number(product.price) || 0;
-      const images = [...new Set((Array.isArray(product.images) ? product.images : [product.image]).filter(Boolean))].slice(0, 3);
+      const royalMediaToken = window.globalRaniMediaRefreshToken || (window.globalRaniMediaRefreshToken = Date.now());
+      const royalFreshUrl = value => { const raw=String(value||'').trim(); if(!raw)return ''; try{const url=new URL(raw,window.location.href);url.searchParams.set('_grmedia',String(royalMediaToken));return url.toString();}catch(_){return raw+(raw.includes('?')?'&':'?')+'_grmedia='+royalMediaToken;} };
+      const images = [...new Set((Array.isArray(product.images) ? product.images : [product.image]).filter(Boolean).map(royalFreshUrl))].slice(0, 3);
       const imageMarkup = images.map((url, index) => `<img alt="${escapeRoyalHtml(name)} photo ${index + 1}" class="${index === 0 ? 'active' : ''}" decoding="async" loading="lazy" src="${escapeRoyalHtml(url)}"/>`).join('');
       const photoControls = images.length > 1 ? `
         <button aria-label="Previous ${escapeRoyalHtml(name)} photo" class="carousel-btn royal-photo-btn prev bloom-hover" onclick="event.stopPropagation(); moveCarousel('${id}', -1)" type="button">‹</button>
@@ -5458,11 +5461,13 @@
         <div aria-label="${escapeRoyalHtml(name)} carousel dots" class="carousel-dots">
           ${images.map((_, index) => `<button aria-label="Show photo ${index + 1}" class="carousel-dot ${index === 0 ? 'active' : ''}" onclick="event.stopPropagation(); showCarousel('${id}', ${index})" type="button"></button>`).join('')}
         </div>` : '';
-      const tryOnButton = product.arImage
-        ? `<button class="royal-tryon-btn bloom-hover" data-royal-action="tryon" data-tryon-id="${id}" data-tryon-image="${escapeRoyalHtml(product.arImage)}" data-tryon-name="${escapeRoyalHtml(name)}" onclick="return openGlobalRaniTryOn(event, this)" onpointerdown="return openGlobalRaniTryOn(event, this)" type="button">Try It On</button>`
+      const freshArImage = royalFreshUrl(product.arImage);
+      const freshBoxGif = royalFreshUrl(product.boxGif);
+      const tryOnButton = freshArImage
+        ? `<button class="royal-tryon-btn bloom-hover" data-royal-action="tryon" data-tryon-id="${id}" data-tryon-image="${escapeRoyalHtml(freshArImage)}" data-tryon-name="${escapeRoyalHtml(name)}" onclick="return openGlobalRaniTryOn(event, this)" onpointerdown="return openGlobalRaniTryOn(event, this)" type="button">Try It On</button>`
         : '<button class="royal-tryon-btn bloom-hover" disabled aria-disabled="true" type="button">Product not available to try-on</button>';
 
-      return `<article class="product royal-3d-card bloom-hover" data-name="${escapeRoyalHtml(name)}" data-price="${price.toFixed(2)}" data-usd-price="${price.toFixed(2)}">
+      return `<article class="product royal-3d-card bloom-hover" data-name="${escapeRoyalHtml(name)}" data-price="${price.toFixed(2)}" data-usd-price="${price.toFixed(2)}" data-box-gif="${escapeRoyalHtml(freshBoxGif)}">
         <div class="royal-3d-card-inner">
           <div class="product-carousel royal-orbit-product" data-carousel="${id}">
             ${imageMarkup}${photoControls}
@@ -6580,8 +6585,9 @@
     const modalName = document.getElementById('inventoryProductName');
     const modalPrice = document.getElementById('inventoryProductPrice');
     const modalAdd = document.getElementById('inventoryProductAdd');
+    const modalTryOn = document.getElementById('inventoryProductTryOn');
     const modalClose = document.getElementById('inventoryProductClose');
-    if (!canvas || !modal || !dialog || !modalImage || !modalName || !modalPrice || !modalAdd) return;
+    if (!canvas || !modal || !dialog || !modalImage || !modalName || !modalPrice || !modalAdd || !modalTryOn) return;
 
     const fallbackImages = [
       'https://ik.imagekit.io/k0wpvuatq/jaipur-pastel-set-1.jpeg',
@@ -6612,6 +6618,13 @@
     let nextIndex = 0;
     let timers = [];
     const productByImage = new Map();
+    const mediaRefreshToken = Date.now();
+    const refreshMediaUrl = value => {
+      const raw = String(value || '').trim();
+      if (!raw) return '';
+      try { const url = new URL(raw, window.location.href); url.searchParams.set('_grmedia', String(mediaRefreshToken)); return url.toString(); }
+      catch (_) { return raw + (raw.includes('?') ? '&' : '?') + '_grmedia=' + mediaRefreshToken; }
+    };
     const titleFromFile = value => {
       const raw = String(value || '').split('/').pop().replace(/\.[a-z0-9]+$/i,'').replace(/[-_]+/g,' ').replace(/\s+\d+$/,'').trim();
       return raw ? raw.replace(/\b\w/g, letter => letter.toUpperCase()) : 'Global Rani Jewelry';
@@ -6622,14 +6635,31 @@
       const product=productByImage.get(src)||{};
       const name=product.name||product.title||titleFromFile(product.fileName||src);
       const price=Number(product.price??product.priceUSD??defaultPriceFor(product.folder||src))||45;
+      const boxGif=refreshMediaUrl(product.boxGif);
+      const arImage=refreshMediaUrl(product.arImage);
       dialog.dataset.name=name;dialog.dataset.price=String(price);dialog.dataset.usdPrice=String(price);
-      modalImage.src=src;modalImage.alt=name;modalName.textContent=name;modalPrice.textContent=`$${price.toFixed(2)}`;
+      dialog.dataset.productId=String(product.id||'');dialog.dataset.arImage=arImage;
+      modalImage.src=boxGif||src;
+      modalImage.alt=boxGif ? `${name} jewelry box opening animation` : name;
+      modalImage.onerror=function(){ if(this.src!==src){ this.onerror=null; this.src=src; this.alt=name; } };
+      modalName.textContent=name;modalPrice.textContent=`$${price.toFixed(2)}`;
+      modalTryOn.disabled=!arImage;
+      modalTryOn.setAttribute('aria-disabled', arImage ? 'false' : 'true');
+      modalTryOn.textContent=arImage ? 'Try It On' : 'Product not available to try-on';
       modal.classList.add('open');modal.setAttribute('aria-hidden','false');document.body.style.overflow='hidden';modalClose?.focus();
     }
     modalClose?.addEventListener('click',closeInventoryProduct);
     modal.addEventListener('click',event=>{if(event.target===modal)closeInventoryProduct();});
     document.addEventListener('keydown',event=>{if(event.key==='Escape'&&modal.classList.contains('open'))closeInventoryProduct();});
     modalAdd.addEventListener('click',()=>{if(typeof addToCart==='function')addToCart(modalAdd);closeInventoryProduct();});
+    modalTryOn.addEventListener('click',()=>{
+      const arImage=String(dialog.dataset.arImage||'').trim();
+      if(!arImage) return;
+      const payload={id:dialog.dataset.productId||'',name:dialog.dataset.name||'Global Rani Jewelry',image:arImage};
+      try{localStorage.setItem('globalRaniSelectedTryOn',JSON.stringify(payload));}catch(_){}
+      const params=new URLSearchParams({product:payload.id,name:payload.name,image:payload.image});
+      window.location.assign('ar-tryon.html?'+params.toString());
+    });
 
     function nextImage() {
       if (!activeImages.length) return '';
@@ -6684,7 +6714,8 @@
     Promise.allSettled([
       window.globalRaniCachedJson('/api/inventory-images'),
       window.globalRaniCachedJson('/api/jewelry-products'),
-      window.globalRaniCachedJson('/api/earring-products')
+      window.globalRaniCachedJson('/api/earring-products'),
+      window.globalRaniCachedJson('/api/bangle-products')
     ]).then(results => {
       const remote = [];
       results.forEach(result => {
