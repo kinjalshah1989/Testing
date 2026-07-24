@@ -556,10 +556,20 @@
     modal.setAttribute('aria-label', product.name + ' jewelry box animation');
     modal.querySelector('.set-gif-actions').setAttribute('aria-label', product.name + ' actions');
     const tryOnButton = document.getElementById('gulabiTryItOn');
-    const hasArImage = Boolean(String(product.arImage || '').trim());
-    tryOnButton.disabled = !hasArImage;
+    const arImage = String(product.arImage || '').trim();
+    const hasArImage = Boolean(arImage);
     tryOnButton.textContent = hasArImage ? 'Try It On' : 'Product not available to try-on';
+    tryOnButton.disabled = !hasArImage;
     tryOnButton.setAttribute('aria-disabled', hasArImage ? 'false' : 'true');
+    tryOnButton.toggleAttribute('data-unavailable-tryon', !hasArImage);
+    if (hasArImage) {
+      tryOnButton.removeAttribute('disabled');
+      tryOnButton.removeAttribute('data-unavailable-tryon');
+      tryOnButton.removeAttribute('tabindex');
+      tryOnButton.dataset.arImage = arImage;
+    } else {
+      delete tryOnButton.dataset.arImage;
+    }
     freezeFrame.style.display = 'none';
 
     const gif = oldGif.cloneNode(false);
@@ -615,14 +625,21 @@
     setTimeout(() => { this.textContent = original; this.disabled = false; }, 1100);
   });
 
-  document.getElementById('gulabiTryItOn').addEventListener('click', function () {
+  document.getElementById('gulabiTryItOn').addEventListener('click', function (event) {
+    event.preventDefault();
+    event.stopPropagation();
     const product = productRegistry.get(modal.dataset.productSlug);
-    if (!product || !String(product.arImage || '').trim()) {
-      this.disabled = true;
-      this.textContent = 'Product not available to try-on';
-      return;
-    }
-    const payload = { id: product.id, name: product.name, image: product.arImage };
+    const arImage = String((product && product.arImage) || this.dataset.arImage || '').trim();
+    if (!product || !arImage) return;
+
+    // A valid ImageKit AR asset must always remain clickable.
+    this.disabled = false;
+    this.removeAttribute('disabled');
+    this.removeAttribute('data-unavailable-tryon');
+    this.setAttribute('aria-disabled', 'false');
+    this.textContent = 'Try It On';
+
+    const payload = { id: product.id, name: product.name, image: arImage };
     try { localStorage.setItem('globalRaniSelectedTryOn', JSON.stringify(payload)); } catch (error) {}
     const params = new URLSearchParams({ product: payload.id, name: payload.name, image: payload.image });
     window.location.assign('../ar-tryon.html?' + params.toString());

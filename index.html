@@ -5458,8 +5458,9 @@
         <div aria-label="${escapeRoyalHtml(name)} carousel dots" class="carousel-dots">
           ${images.map((_, index) => `<button aria-label="Show photo ${index + 1}" class="carousel-dot ${index === 0 ? 'active' : ''}" onclick="event.stopPropagation(); showCarousel('${id}', ${index})" type="button"></button>`).join('')}
         </div>` : '';
-      const tryOnButton = product.arImage
-        ? `<button class="royal-tryon-btn bloom-hover" data-royal-action="tryon" data-tryon-id="${id}" data-tryon-image="${escapeRoyalHtml(product.arImage)}" data-tryon-name="${escapeRoyalHtml(name)}" onclick="return openGlobalRaniTryOn(event, this)" onpointerdown="return openGlobalRaniTryOn(event, this)" type="button">Try It On</button>`
+      const arImage = String(product.arImage || '').trim();
+      const tryOnButton = arImage
+        ? `<button class="royal-tryon-btn bloom-hover" data-royal-action="tryon" data-tryon-id="${id}" data-tryon-image="${escapeRoyalHtml(arImage)}" data-tryon-name="${escapeRoyalHtml(name)}" onclick="return openGlobalRaniTryOn(event, this)" type="button" aria-disabled="false">Try It On</button>`
         : '<button class="royal-tryon-btn bloom-hover" disabled aria-disabled="true" type="button">Product not available to try-on</button>';
 
       return `<article class="product royal-3d-card bloom-hover" data-name="${escapeRoyalHtml(name)}" data-price="${price.toFixed(2)}" data-usd-price="${price.toFixed(2)}">
