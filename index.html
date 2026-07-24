@@ -5085,28 +5085,48 @@
       renderPayPalButtons();
     }
 
-    function addToCart(button) {
-      const card = button.closest('.product');
-      const item = { name: card.dataset.name, priceUSD: Number(card.dataset.usdPrice || card.dataset.price), quantity: 1 };
-      const existing = cart.find(cartItem => getCartItemKey(cartItem) === getCartItemKey(item));
+    function addCartItem(item, button) {
+      if (!item || !item.name || !Number.isFinite(Number(item.priceUSD))) return false;
+      const normalizedItem = {
+        name: String(item.name).trim(),
+        priceUSD: Number(item.priceUSD),
+        quantity: getItemQuantity(item),
+        ...(item.image ? { image: item.image } : {})
+      };
+      const existing = cart.find(cartItem => getCartItemKey(cartItem) === getCartItemKey(normalizedItem));
       if (existing) {
-        existing.quantity = getItemQuantity(existing) + 1;
-        existing.priceUSD = item.priceUSD;
+        existing.quantity = getItemQuantity(existing) + normalizedItem.quantity;
+        existing.priceUSD = normalizedItem.priceUSD;
+        if (normalizedItem.image) existing.image = normalizedItem.image;
       } else {
-        cart.push(item);
+        cart.push(normalizedItem);
       }
       saveCart();
       profileSubmittedForPayment = hasSavedShippingProfileForCurrentMember();
       hideOrderConfirmation();
-      button.textContent = 'Added ✓';
-      setTimeout(() => button.textContent = 'Add to Cart', 900);
+      if (button) {
+        const originalText = button.dataset.originalText || button.textContent || 'Add to Cart';
+        button.dataset.originalText = originalText;
+        button.textContent = 'Added ✓';
+        setTimeout(() => { button.textContent = originalText; }, 900);
+      }
       renderCart();
       renderPayPalButtons();
       const profileStatus = document.getElementById('profileStatus');
       if (profileStatus) profileStatus.textContent = profileSubmittedForPayment ? 'Item added. Your saved member shipping details are ready, so payment can continue.' : 'Item added. Continue as guest or save shipping details before payment.';
       const drawer = document.getElementById('cartDrawer');
       if (drawer && !drawer.classList.contains('open')) drawer.classList.add('open');
-      const rect = button.getBoundingClientRect();
+      return true;
+    }
+
+    function addToCart(button) {
+      const card = button && button.closest('.product, [data-name][data-price], [data-name][data-usd-price]');
+      if (!card) return false;
+      return addCartItem({
+        name: card.dataset.name,
+        priceUSD: Number(card.dataset.usdPrice || card.dataset.price),
+        image: card.dataset.image || card.querySelector('img')?.src || ''
+      }, button);
     }
 
     function removeFromCart(index) {
@@ -6171,14 +6191,20 @@
     let lastTrigger = null;
 
     function pauseWheelPreviews(){
-      document.querySelectorAll('.video-cabin-inner video').forEach(video => {
+      document.querySelectorAll('.video-cabin-inner video, .collection-video-card video').forEach(video => {
         try { video.pause(); } catch(e) {}
       });
     }
     function resumeWheelPreviews(){
-      document.querySelectorAll('.video-cabin-inner video').forEach(video => {
-        video.muted = true;
-        try { video.play(); } catch(e) {}
+      document.querySelectorAll('.video-cabin-inner video, .collection-video-card video').forEach(video => {
+        // Preserve a customer's sound choice. Muting is only the autoplay fallback.
+        const playAttempt = video.play();
+        if (playAttempt && typeof playAttempt.catch === 'function') {
+          playAttempt.catch(() => {
+            video.muted = true;
+            video.play().catch(() => {});
+          });
+        }
       });
     }
     function openViewer(trigger){
@@ -6200,7 +6226,9 @@
         closeBtn.focus();
         player.muted = false;
         player.volume = 1;
-        player.play().catch(() => {});
+        player.play().catch(() => {
+          // Some browsers still require a direct media gesture; controls remain available.
+        });
       }, 80);
     }
     function closeViewer(){
@@ -6216,7 +6244,7 @@
     }
 
     document.addEventListener('click', function(event){
-      const trigger = event.target.closest('.video-cabin-inner.has-video[data-video-src]');
+      const trigger = event.target.closest('.video-cabin-inner.has-video[data-video-src], .collection-video-card.has-video[data-video-src]');
       if (trigger) {
         event.preventDefault();
         openViewer(trigger);
@@ -6225,7 +6253,7 @@
       if (event.target === overlay) closeViewer();
     });
     document.addEventListener('keydown', function(event){
-      const trigger = event.target.closest && event.target.closest('.video-cabin-inner.has-video[data-video-src]');
+      const trigger = event.target.closest && event.target.closest('.video-cabin-inner.has-video[data-video-src], .collection-video-card.has-video[data-video-src]');
       if (trigger && (event.key === 'Enter' || event.key === ' ')) {
         event.preventDefault();
         openViewer(trigger);
@@ -6613,14 +6641,20 @@
       const product=productByImage.get(src)||{};
       const name=product.name||product.title||titleFromFile(product.fileName||src);
       const price=Number(product.price??product.priceUSD??defaultPriceFor(product.folder||src))||45;
-      dialog.dataset.name=name;dialog.dataset.price=String(price);dialog.dataset.usdPrice=String(price);
+      dialog.dataset.name=name;dialog.dataset.price=String(price);dialog.dataset.usdPrice=String(price);dialog.dataset.image=src;
       modalImage.src=src;modalImage.alt=name;modalName.textContent=name;modalPrice.textContent=`$${price.toFixed(2)}`;
       modal.classList.add('open');modal.setAttribute('aria-hidden','false');document.body.style.overflow='hidden';modalClose?.focus();
     }
     modalClose?.addEventListener('click',closeInventoryProduct);
     modal.addEventListener('click',event=>{if(event.target===modal)closeInventoryProduct();});
     document.addEventListener('keydown',event=>{if(event.key==='Escape'&&modal.classList.contains('open'))closeInventoryProduct();});
-    modalAdd.addEventListener('click',()=>{if(typeof addToCart==='function')addToCart(modalAdd);closeInventoryProduct();});
+    modalAdd.addEventListener('click',()=>{
+      const added = typeof addToCart === 'function' && addToCart(modalAdd);
+      if (added) {
+        modalAdd.textContent = 'Added ✓';
+        setTimeout(closeInventoryProduct, 350);
+      }
+    });
 
     function nextImage() {
       if (!activeImages.length) return '';
