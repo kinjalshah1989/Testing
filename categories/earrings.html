@@ -441,7 +441,10 @@
       images,
       image: images[0] || '',
       arImage: raw.arImage || '',
-      boxGif: raw.boxGif || ''
+      boxGif: raw.boxGif || '',
+      collectionId: raw.collectionId || raw.id || id,
+      collectionName: raw.collectionName || raw.name || displayName(id),
+      colorCount: Number(raw.colorCount || 1)
     };
   }
 
@@ -471,7 +474,7 @@
       <p>${safe(product.description)}</p>
       <div class="price-row">
         <div class="price">$${product.price.toFixed(2)}</div>
-        <button class="add-btn" type="button" data-open-set-gif="${safe(product.id)}" aria-haspopup="dialog">View Earrings</button>
+        <a class="add-btn" href="category-variants.html?category=earrings&collection=${encodeURIComponent(product.collectionId || product.id)}">View Options${product.colorCount > 1 ? ` (${product.colorCount} colors)` : ''}</a>
       </div>
     </article>`;
 
@@ -656,7 +659,7 @@
     if (!lastCatalogSignature) render(fallbackProducts);
     try {
       const data = await window.globalRaniCachedJson(API_URL, { force, ttl: 60 * 1000 });
-      const products = Array.isArray(data) ? data : data.products;
+      const products = Array.isArray(data) ? data : (Array.isArray(data.collections) ? data.collections : data.products);
       if (!Array.isArray(data) && data.folder && data.folder !== '/global-rani-earrings') {
         throw new Error('The earrings API is not reading the global-rani-earrings folder.');
       }

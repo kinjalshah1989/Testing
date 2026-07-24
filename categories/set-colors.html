@@ -340,7 +340,7 @@
 </style>
 </head>
 <body><div class="top-banner">We Ship Globally</div><nav><div class="nav-inner"><a class="brand" href="../index.html"><img alt="The Global Rani logo" onerror="this.onerror=null;this.src='https://ik.imagekit.io/k0wpvuatq/category-temple-jewelry.jpg';" src="https://ik.imagekit.io/k0wpvuatq/global-rani-logo.png"/><span>The Global Rani</span></a><div class="nav-actions"><div class="profile-menu-wrap"><button aria-expanded="false" aria-haspopup="true" aria-label="Open member profile sign up and login" class="profile-icon-link profile-trigger bloom-hover" title="Sign up or log in" type="button"><span class="profile-caret-badge">⌄</span></button><div class="profile-dropdown" role="menu"><a href="../account.html" role="menuitem">Member Profile</a><a href="../account.html?action=login" role="menuitem">Log in</a><button class="profile-dropdown-logout global-profile-logout" hidden="" role="menuitem" type="button">Log Out</button></div></div></div></div></nav>
-<header><div><div class="eyebrow">Complete Royal Collections</div><h1 id="colorsPageTitle">AVAILABLE COLORS</h1><p>Choose your favorite color, view every angle, add it to your cart, or try it on virtually.</p><a class="back" href="#inventory">View Available Colors</a></div><div class="hero-img"><img alt="Maharani Manika Topaz Set" decoding="async" loading="lazy" onerror="this.onerror=null;this.src='https://ik.imagekit.io/k0wpvuatq/category-temple-jewelry.jpg';" src="https://ik.imagekit.io/k0wpvuatq/maharani-manika-topaz-set-1.png"/></div></header>
+<header><div><div class="eyebrow">Complete Royal Collections</div><h1 id="colorsPageTitle">AVAILABLE COLORS</h1><a class="back" href="#inventory">View Available Colors</a></div><div class="hero-img"><img id="selectedCollectionHero" alt="Selected jewelry collection" decoding="async" loading="eager" src="https://ik.imagekit.io/k0wpvuatq/category-temple-jewelry.jpg"/></div></header>
 <section class="section-title" id="inventory"><h2>Jewelry Sets Collection</h2><p>Four regal sets from the Maharani Manika and Rajwadi collections.</p></section>
 <div aria-label="Product catalog controls" class="catalog-controls">
 <label class="catalog-filter">Category
@@ -678,6 +678,20 @@
       if (title) title.textContent = pageName.toUpperCase();
       if (inventoryTitle) inventoryTitle.textContent = `${pageName} Colors`;
       document.title = `${pageName} Colors | The Global Rani`;
+
+      // Show the actual jewelry collection the customer selected on the previous page.
+      const heroImage = document.getElementById('selectedCollectionHero');
+      const selectedImage = selectedCollection?.image || selectedCollection?.images?.[0] || products[0]?.image || products[0]?.images?.[0] || '';
+      if (heroImage && selectedImage) {
+        heroImage.src = selectedImage;
+        heroImage.alt = `${pageName} jewelry`;
+        heroImage.onerror = function () {
+          const fallbackImage = products.find(item => item.image || (Array.isArray(item.images) && item.images[0]));
+          const fallbackSource = fallbackImage?.image || fallbackImage?.images?.[0] || '';
+          if (fallbackSource && this.src !== fallbackSource) this.src = fallbackSource;
+          else this.onerror = null;
+        };
+      }
 
       const nextSignature = JSON.stringify(products.map(item => ({ id:item.id, images:item.images, arImage:item.arImage, boxGif:item.boxGif, price:item.price, name:item.name })));
       if (force && nextSignature === lastCatalogSignature) return;
