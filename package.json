@@ -1,0 +1,9 @@
+{
+  "name": "global-rani-storefront",
+  "private": true,
+  "type": "module",
+  "engines": { "node": ">=20" },
+  "dependencies": {
+    "sharp": "^0.34.3"
+  }
+}

@@ -1,4 +1,5 @@
 import { getOrCreatePermanentPrice, configuredSetPriceRange } from '../shared/permanent-prices.mjs';
+import { assignVisualPriceGroups } from '../shared/visual-similarity.mjs';
 const IMAGEKIT_FOLDER = '/global-rani-products';
 
 const SERVER_CACHE_TTL = 15 * 60 * 1000;
@@ -192,13 +193,20 @@ export default async function handler(request) {
         images: orderedImages.map(versionedFileUrl),
         image: versionedFileUrl(firstImage),
         arImage: versionedFileUrl(arFile),
-        boxGif: versionedFileUrl(gifFile)
+        boxGif: versionedFileUrl(gifFile),
+        visualGroupOverride: metadata.visualGroup || metadata.similarityGroup || ''
       });
     }
 
+    // Compare the first product image after converting it to a tiny normalized
+    // grayscale fingerprint. This largely ignores color and detects products
+    // with the same underlying design while keeping every storefront card separate.
+    const visualGrouping = await assignVisualPriceGroups(products);
     const priceRange = configuredSetPriceRange();
     await Promise.all(products.map(async product => {
-      product.price = await getOrCreatePermanentPrice(product.id, priceRange.min, priceRange.max);
+      // Every item in a detected visual group uses the same permanent pricing key.
+      // A one-item group still receives its own stable price.
+      product.price = await getOrCreatePermanentPrice(product.visualPriceGroup, priceRange.min, priceRange.max);
     }));
 
     products.sort((a, b) => a.name.localeCompare(b.name));
@@ -210,7 +218,9 @@ export default async function handler(request) {
       totalImageKitFilesRead: allFiles.length,
       filesSeenInProductFolder: files.length,
       filenamesSeen: files.map(file => file.name),
-      incompleteProducts
+      incompleteProducts,
+      visualPriceGroups: visualGrouping.groups,
+      visualSimilarityThreshold: visualGrouping.threshold
     };
     memoryCache = { savedAt: Date.now(), body: payload };
     return json(payload, 200, 'MISS', forceRefresh);
