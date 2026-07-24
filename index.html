@@ -5499,7 +5499,33 @@
         if (!available.length) throw new Error('No ImageKit products are available for Royal Drops.');
 
         const selected = shuffleRoyalProducts(available).slice(0, Math.min(4, available.length));
+        window.globalRaniRoyalDropProducts = new Map(selected.map(product => {
+          const key=String(product.id||product.name||'royal-drop').toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/^-|-$/g,'');
+          return [key,product];
+        }));
         track.innerHTML = selected.map(royalProductCard).join('');
+        track.querySelectorAll('.royal-3d-card').forEach(card=>{
+          const carousel=card.querySelector('.product-carousel');
+          const key=carousel?.dataset.carousel||'';
+          carousel?.addEventListener('click',event=>{
+            if(event.target.closest('button,a')) return;
+            const image=carousel.querySelector('img.active')||carousel.querySelector('img');
+            const product=window.globalRaniRoyalDropProducts?.get(key);
+            if(product&&typeof window.globalRaniOpenProductMedia==='function') window.globalRaniOpenProductMedia(product,image?.currentSrc||image?.src||'');
+          });
+          carousel?.querySelectorAll('img').forEach(image=>{
+            image.style.cursor='pointer';
+            image.setAttribute('role','button');
+            image.setAttribute('tabindex','0');
+            image.setAttribute('aria-label',`Open ${card.dataset.name||'Royal Drop'} details`);
+            image.addEventListener('keydown',event=>{
+              if(event.key!=='Enter'&&event.key!==' ') return;
+              event.preventDefault();
+              const product=window.globalRaniRoyalDropProducts?.get(key);
+              if(product&&typeof window.globalRaniOpenProductMedia==='function') window.globalRaniOpenProductMedia(product,image.currentSrc||image.src||'');
+            });
+          });
+        });
         controls.innerHTML = selected.map((product, index) =>
           `<button aria-label="Show ${escapeRoyalHtml(product.name || 'Royal Drop')}" class="royal-3d-dot" onclick="setRoyalDrop(${index})" type="button"></button>`
         ).join('');
@@ -6631,23 +6657,27 @@
     };
     const defaultPriceFor = value => /earring/i.test(value) ? 45 : /bangle|kada/i.test(value) ? 45 : 55;
     function closeInventoryProduct(){modal.classList.remove('open');modal.setAttribute('aria-hidden','true');document.body.style.overflow='';}
-    function openInventoryProduct(src){
-      const product=productByImage.get(src)||{};
-      const name=product.name||product.title||titleFromFile(product.fileName||src);
-      const price=Number(product.price??product.priceUSD??defaultPriceFor(product.folder||src))||45;
+    function openInventoryProduct(src, suppliedProduct){
+      const product=suppliedProduct||productByImage.get(src)||{};
+      const fallbackSrc=src||(Array.isArray(product.images)&&product.images[0])||product.image||'';
+      const name=product.name||product.title||titleFromFile(product.fileName||fallbackSrc);
+      const price=Number(product.price??product.priceUSD??defaultPriceFor(product.folder||fallbackSrc))||45;
+      // Rebuild both media URLs at the moment the modal is opened. This makes
+      // Royal Drops and the mosaic behave exactly like the Jewelry Sets page.
       const boxGif=refreshMediaUrl(product.boxGif);
       const arImage=refreshMediaUrl(product.arImage);
       dialog.dataset.name=name;dialog.dataset.price=String(price);dialog.dataset.usdPrice=String(price);
       dialog.dataset.productId=String(product.id||'');dialog.dataset.arImage=arImage;
-      modalImage.src=boxGif||src;
+      modalImage.src=boxGif||fallbackSrc;
       modalImage.alt=boxGif ? `${name} jewelry box opening animation` : name;
-      modalImage.onerror=function(){ if(this.src!==src){ this.onerror=null; this.src=src; this.alt=name; } };
+      modalImage.onerror=function(){ if(fallbackSrc&&this.src!==fallbackSrc){ this.onerror=null; this.src=fallbackSrc; this.alt=name; } };
       modalName.textContent=name;modalPrice.textContent=`$${price.toFixed(2)}`;
       modalTryOn.disabled=!arImage;
       modalTryOn.setAttribute('aria-disabled', arImage ? 'false' : 'true');
       modalTryOn.textContent=arImage ? 'Try It On' : 'Product not available to try-on';
       modal.classList.add('open');modal.setAttribute('aria-hidden','false');document.body.style.overflow='hidden';modalClose?.focus();
     }
+    window.globalRaniOpenProductMedia=(product,fallbackSrc)=>openInventoryProduct(fallbackSrc||'',product||{});
     modalClose?.addEventListener('click',closeInventoryProduct);
     modal.addEventListener('click',event=>{if(event.target===modal)closeInventoryProduct();});
     document.addEventListener('keydown',event=>{if(event.key==='Escape'&&modal.classList.contains('open'))closeInventoryProduct();});
