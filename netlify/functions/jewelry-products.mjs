@@ -102,25 +102,54 @@ function parseCarouselFilename(filename) {
 }
 
 
-function normalizedMediaStem(filename) {
-  return String(filename || '')
+function mediaTokens(value) {
+  return String(value || '')
     .trim()
     .toLowerCase()
     .replace(/\.(png|jpe?g|webp|avif|gif)$/i, '')
-    .replace(/(?:-?(?:ar|try-on|tryon|transparent|overlay|jewelry-box-opening|box-opening|box-open|opening-animation|opening))$/i, '')
-    .replace(/-(?:set|earrings?|bangles?|kadas?)$/i, '')
-    .replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '');
+    .replace(/([a-z0-9])([A-Z])/g, '$1-$2')
+    .replace(/[^a-z0-9]+/g, '-')
+    .split('-')
+    .filter(Boolean);
 }
-function findAssociatedMedia(files, baseId, kind) {
+function normalizedMediaStem(value) {
+  const ignored = new Set([
+    'set','sets','earring','earrings','bangle','bangles','kada','kadas',
+    'ar','try','on','tryon','transparent','transparency','overlay','cutout',
+    'box','jewelry','jewellery','opening','open','animation','animated','gif','image','img'
+  ]);
+  return mediaTokens(value).filter(token => !ignored.has(token)).join('-');
+}
+function mediaKind(filename) {
+  const name = String(filename || '').toLowerCase();
+  const tokens = new Set(mediaTokens(name));
+  const isGif = /\.gif(?:$|\?)/i.test(name) ||
+    ((tokens.has('box') || tokens.has('jewelry') || tokens.has('jewellery')) &&
+     (tokens.has('opening') || tokens.has('open') || tokens.has('animation') || tokens.has('animated')));
+  const isAr = tokens.has('ar') || tokens.has('tryon') ||
+    (tokens.has('try') && tokens.has('on')) || tokens.has('transparent') ||
+    tokens.has('transparency') || tokens.has('overlay') || tokens.has('cutout');
+  return { isGif, isAr };
+}
+function findAssociatedMedia(allFiles, baseId, kind) {
   const wanted = normalizedMediaStem(baseId);
-  const tests = kind === 'ar'
-    ? [/(?:^|-)(?:ar|try-on|tryon|transparent|overlay)(?:-|\.)/i]
-    : [/(?:jewelry-)?box-(?:opening|open)/i, /opening-animation/i];
-  return files.find(file => {
-    const name = String(file.name || '');
-    if (!tests.some(test => test.test(name))) return false;
-    return normalizedMediaStem(name) === wanted;
+  if (!wanted) return null;
+  const candidates = allFiles.filter(file => {
+    const detected = mediaKind(file.name);
+    if (kind === 'gif' && !detected.isGif) return false;
+    if (kind === 'ar' && !detected.isAr) return false;
+    return normalizedMediaStem(file.name) === wanted;
   });
+  // Prefer a file in a media-specific folder, then the newest upload.
+  candidates.sort((a, b) => {
+    const aPath = String(a.filePath || a.path || '').toLowerCase();
+    const bPath = String(b.filePath || b.path || '').toLowerCase();
+    const aPreferred = /(ar|try.?on|gif|box|animation)/.test(aPath) ? 1 : 0;
+    const bPreferred = /(ar|try.?on|gif|box|animation)/.test(bPath) ? 1 : 0;
+    if (aPreferred !== bPreferred) return bPreferred - aPreferred;
+    return String(b.updatedAt || b.createdAt || '').localeCompare(String(a.updatedAt || a.createdAt || ''));
+  });
+  return candidates[0] || null;
 }
 
 export default async function handler(request) {
@@ -179,8 +208,8 @@ export default async function handler(request) {
         .map(([, file]) => file);
       if (!orderedImages.length) continue;
       const firstImage = orderedImages[0];
-      const arFile = findAssociatedMedia(files, baseId, 'ar');
-      const gifFile = findAssociatedMedia(files, baseId, 'gif');
+      const arFile = findAssociatedMedia(allFiles, baseId, 'ar');
+      const gifFile = findAssociatedMedia(allFiles, baseId, 'gif');
       const metadata = firstImage.customMetadata || {};
       if (!booleanValue(metadata.active, true)) continue;
 

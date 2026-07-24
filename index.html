@@ -5490,7 +5490,7 @@
       if (!track || !controls) return;
 
       try {
-        const response = await fetch('/api/jewelry-products?royalDrops=' + Date.now(), { headers: { Accept: 'application/json' } });
+        const response = await fetch('/api/jewelry-products?refresh=1&royalDrops=' + Date.now(), { cache: 'no-store', headers: { Accept: 'application/json', 'Cache-Control': 'no-cache' } });
         if (!response.ok) throw new Error('Royal Drops could not be loaded.');
         const data = await response.json();
         const available = (Array.isArray(data.products) ? data.products : []).filter(product =>
