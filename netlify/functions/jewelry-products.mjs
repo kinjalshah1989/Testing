@@ -101,6 +101,28 @@ function parseCarouselFilename(filename) {
   return { baseId: match[1], slide: Number(match[2]) };
 }
 
+
+function normalizedMediaStem(filename) {
+  return String(filename || '')
+    .trim()
+    .toLowerCase()
+    .replace(/\.(png|jpe?g|webp|avif|gif)$/i, '')
+    .replace(/(?:-?(?:ar|try-on|tryon|transparent|overlay|jewelry-box-opening|box-opening|box-open|opening-animation|opening))$/i, '')
+    .replace(/-(?:set|earrings?|bangles?|kadas?)$/i, '')
+    .replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '');
+}
+function findAssociatedMedia(files, baseId, kind) {
+  const wanted = normalizedMediaStem(baseId);
+  const tests = kind === 'ar'
+    ? [/(?:^|-)(?:ar|try-on|tryon|transparent|overlay)(?:-|\.)/i]
+    : [/(?:jewelry-)?box-(?:opening|open)/i, /opening-animation/i];
+  return files.find(file => {
+    const name = String(file.name || '');
+    if (!tests.some(test => test.test(name))) return false;
+    return normalizedMediaStem(name) === wanted;
+  });
+}
+
 export default async function handler(request) {
   const forceRefresh = (() => { try { return new URL(request.url).searchParams.get('refresh') === '1'; } catch { return false; } })();
   if (!forceRefresh && memoryCache && Date.now() - memoryCache.savedAt < SERVER_CACHE_TTL) {
@@ -157,20 +179,8 @@ export default async function handler(request) {
         .map(([, file]) => file);
       if (!orderedImages.length) continue;
       const firstImage = orderedImages[0];
-
-      const arCandidates = [
-        `${baseId}-ar.png`, `${baseId}-ar.webp`, `${baseId}-ar.jpg`, `${baseId}-ar.jpeg`, `${baseId}-ar.avif`,
-        `${baseId}-set-ar.png`, `${baseId}-set-ar.webp`, `${baseId}-set-ar.jpg`, `${baseId}-set-ar.jpeg`, `${baseId}-set-ar.avif`
-      ];
-
-      const gifCandidates = [
-        `${baseId}-box-opening.gif`,
-        `${baseId}-jewelry-box-opening.gif`,
-        `${baseId}-set-jewelry-box-opening.gif`
-      ];
-
-      const arFile = arCandidates.map(name => byName.get(name.toLowerCase())).find(Boolean);
-      const gifFile = gifCandidates.map(name => byName.get(name.toLowerCase())).find(Boolean);
+      const arFile = findAssociatedMedia(files, baseId, 'ar');
+      const gifFile = findAssociatedMedia(files, baseId, 'gif');
       const metadata = firstImage.customMetadata || {};
       if (!booleanValue(metadata.active, true)) continue;
 

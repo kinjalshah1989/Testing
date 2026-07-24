@@ -448,10 +448,10 @@
   };
 
   const fallbackProducts = [
-    { id:'maharani-manika-topaz-set', name:'Maharani Manika Topaz Set', description:'A regal topaz-toned statement set with matching earrings.', price:1, images:[1,2,3].map(n=>CDN+`maharani-manika-topaz-set-${n}.png`), arImage:CDN+'maharani-manika-topaz-set-ar.png', boxGif:CDN+'maharani-manika-topaz-jewelry-box-opening.gif' },
-    { id:'maharani-manika-gulabi-set', name:'Maharani Manika Gulabi Set', description:'A romantic gulabi-hued jewelry set for weddings and festive celebrations.', price:65, images:[1,2,3].map(n=>CDN+`maharani-manika-gulabi-set-${n}.png`), arImage:CDN+'maharani-manika-gulabi-set-ar.png', boxGif:CDN+'maharani-manika-gulabi-jewelry-box-opening.gif' },
-    { id:'rajwadi-navratna-set', name:'Rajwadi Navratna Set', description:'A royal navratna-inspired set featuring rich multicolored detailing.', price:85, images:[1,2,3].map(n=>CDN+`rajwadi-navratna-set-${n}.png`), arImage:CDN+'rajwadi-navratna-set-ar.png', boxGif:CDN+'rajwadi-navratna-jewelry-box-opening.gif' },
-    { id:'maharani-manika-ruby-set', name:'Maharani Manika Ruby Set', description:'A bold ruby-toned Maharani set designed for grand occasions.', price:65, images:[1,2,3].map(n=>CDN+`maharani-manika-ruby-set-${n}.png`), arImage:CDN+'maharani-manika-ruby-set-ar.png', boxGif:CDN+'maharani-manika-ruby-jewelry-box-opening.gif' }
+    { id:'maharani-manika-topaz-set', name:'Maharani Manika Topaz Set', description:'A regal topaz-toned statement set with matching earrings.', price:1, images:[1,2,3].map(n=>CDN+`maharani-manika-topaz-set-${n}.png`), arImage:'', boxGif:'' },
+    { id:'maharani-manika-gulabi-set', name:'Maharani Manika Gulabi Set', description:'A romantic gulabi-hued jewelry set for weddings and festive celebrations.', price:65, images:[1,2,3].map(n=>CDN+`maharani-manika-gulabi-set-${n}.png`), arImage:'', boxGif:'' },
+    { id:'rajwadi-navratna-set', name:'Rajwadi Navratna Set', description:'A royal navratna-inspired set featuring rich multicolored detailing.', price:85, images:[1,2,3].map(n=>CDN+`rajwadi-navratna-set-${n}.png`), arImage:'', boxGif:'' },
+    { id:'maharani-manika-ruby-set', name:'Maharani Manika Ruby Set', description:'A bold ruby-toned Maharani set designed for grand occasions.', price:65, images:[1,2,3].map(n=>CDN+`maharani-manika-ruby-set-${n}.png`), arImage:'', boxGif:'' }
   ];
 
   const safe = value => String(value || '').replace(/[&<>"']/g, ch => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[ch]));

@@ -76,6 +76,28 @@ function parseProductImage(filename) {
   return { baseId: single[1].replace(/-(bangles?|kadas?|set)$/i, ''), slide: 1 };
 }
 
+
+function normalizedMediaStem(filename) {
+  return String(filename || '')
+    .trim()
+    .toLowerCase()
+    .replace(/\.(png|jpe?g|webp|avif|gif)$/i, '')
+    .replace(/(?:-?(?:ar|try-on|tryon|transparent|overlay|jewelry-box-opening|box-opening|box-open|opening-animation|opening))$/i, '')
+    .replace(/-(?:set|earrings?|bangles?|kadas?)$/i, '')
+    .replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '');
+}
+function findAssociatedMedia(files, baseId, kind) {
+  const wanted = normalizedMediaStem(baseId);
+  const tests = kind === 'ar'
+    ? [/(?:^|-)(?:ar|try-on|tryon|transparent|overlay)(?:-|\.)/i]
+    : [/(?:jewelry-)?box-(?:opening|open)/i, /opening-animation/i];
+  return files.find(file => {
+    const name = String(file.name || '');
+    if (!tests.some(test => test.test(name))) return false;
+    return normalizedMediaStem(name) === wanted;
+  });
+}
+
 export default async function handler(request) {
   const forceRefresh = (() => {
     try { return new URL(request.url).searchParams.get('refresh') === '1'; }
@@ -122,18 +144,8 @@ export default async function handler(request) {
       const first = orderedImages[0];
       const metadata = first.customMetadata || {};
       if (!booleanValue(metadata.active, true)) continue;
-
-      const arCandidates = [
-        `${baseId}-ar.png`, `${baseId}-ar.webp`, `${baseId}-ar.jpg`, `${baseId}-ar.jpeg`,
-        `${baseId}-bangles-ar.png`, `${baseId}-bangle-ar.png`, `${baseId}-kadas-ar.png`, `${baseId}-kada-ar.png`
-      ];
-      const gifCandidates = [
-        `${baseId}-box-opening.gif`, `${baseId}-jewelry-box-opening.gif`,
-        `${baseId}-bangles-box-opening.gif`, `${baseId}-bangle-box-opening.gif`,
-        `${baseId}-kadas-box-opening.gif`, `${baseId}-kada-box-opening.gif`
-      ];
-      const arFile = arCandidates.map(name => byName.get(name.toLowerCase())).find(Boolean);
-      const gifFile = gifCandidates.map(name => byName.get(name.toLowerCase())).find(Boolean);
+      const arFile = findAssociatedMedia(files, baseId, 'ar');
+      const gifFile = findAssociatedMedia(files, baseId, 'gif');
 
       products.push({
         id: `${baseId}-bangles`,
