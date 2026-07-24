@@ -373,63 +373,6 @@
         grid-template-columns: 102px 1fr 48px;
       }
     }
-
-
-    /* Simplified AR page: only the requested title, Home, Start Camera, and product box remain visible. */
-    .brand-mark,
-    #selectedTryOnLabel,
-    #trackingBtn,
-    #necklaceBtn,
-    #earringsBtn,
-    #resetBtn,
-    #selectedBadge,
-    .panel,
-    .status,
-    .card p,
-    .global-rani-whatsapp-help {
-      display: none !important;
-    }
-
-    .topbar,
-    .app.camera-active .topbar {
-      display: flex !important;
-      opacity: 1 !important;
-      visibility: visible !important;
-      pointer-events: auto !important;
-    }
-
-    .card,
-    .app.camera-active .card {
-      display: block !important;
-      opacity: 1 !important;
-      visibility: visible !important;
-      pointer-events: auto !important;
-      right: 16px;
-      bottom: 16px;
-    }
-
-    .brand h1 {
-      margin: 0;
-    }
-
-    @media (max-width: 880px) {
-      .topbar {
-        flex-direction: row;
-        align-items: center;
-        border-radius: 999px;
-      }
-
-      .actions {
-        width: auto;
-        margin-left: auto;
-      }
-
-      .card,
-      .app.camera-active .card {
-        display: block !important;
-        width: min(180px, calc(100vw - 32px));
-      }
-    }
   </style>
 </head>
 
@@ -442,7 +385,7 @@
       <div class="brand">
         <a class="brand-mark" href="index.html" title="Back to The Global Rani" style="text-decoration:none">GR</a>
         <div>
-          <h1>The Global Rani Virtual Try-On</h1>
+          <h1>The Global Rani Virtual AR Try-On</h1>
           <p id="selectedTryOnLabel">Virtual jewelry fitting</p>
         </div>
       </div>
@@ -1119,7 +1062,7 @@
 
         video.srcObject = stream;
         await video.play();
-        startBtn.textContent = "Start Camera";
+        startBtn.textContent = "Camera On";
         statusEl.textContent = "Camera preview is on. Finishing face tracking...";
 
         await trackerReady;

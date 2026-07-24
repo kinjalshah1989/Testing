@@ -4,12 +4,12 @@ const IMAGEKIT_FOLDER = '/global-rani-products';
 const SERVER_CACHE_TTL = 15 * 60 * 1000;
 let memoryCache = null;
 
-function json(body, status = 200, cacheStatus = 'MISS', noStore = false) {
+function json(body, status = 200, cacheStatus = 'MISS', forceRefresh = false) {
   return new Response(JSON.stringify(body, null, 2), {
     status,
     headers: {
       'Content-Type': 'application/json; charset=utf-8',
-      'Cache-Control': noStore || status !== 200 ? 'no-store, max-age=0' : 'public, max-age=300, s-maxage=900, stale-while-revalidate=86400',
+      'Cache-Control': status === 200 && !forceRefresh ? 'public, max-age=300, s-maxage=900, stale-while-revalidate=86400' : 'no-store, max-age=0',
       'X-Global-Rani-Cache': cacheStatus
     }
   });
@@ -30,6 +30,15 @@ function parentFolder(file) {
   const index = path.lastIndexOf('/');
   return index <= 0 ? '/' : path.slice(0, index);
 }
+function versionedFileUrl(file) {
+  const raw = String(file?.url || '').trim();
+  if (!raw) return '';
+  const version = String(file?.updatedAt || file?.createdAt || file?.fileId || '').trim();
+  if (!version) return raw;
+  const separator = raw.includes('?') ? '&' : '?';
+  return `${raw}${separator}grv=${encodeURIComponent(version)}`;
+}
+
 
 function displayNameFromId(id) {
   return String(id || '')
@@ -101,57 +110,6 @@ function parseCarouselFilename(filename) {
   return { baseId: match[1], slide: Number(match[2]) };
 }
 
-
-function mediaTokens(value) {
-  return String(value || '')
-    .trim()
-    .toLowerCase()
-    .replace(/\.(png|jpe?g|webp|avif|gif)$/i, '')
-    .replace(/([a-z0-9])([A-Z])/g, '$1-$2')
-    .replace(/[^a-z0-9]+/g, '-')
-    .split('-')
-    .filter(Boolean);
-}
-function normalizedMediaStem(value) {
-  const ignored = new Set([
-    'set','sets','earring','earrings','bangle','bangles','kada','kadas',
-    'ar','try','on','tryon','transparent','transparency','overlay','cutout',
-    'box','jewelry','jewellery','opening','open','animation','animated','gif','image','img'
-  ]);
-  return mediaTokens(value).filter(token => !ignored.has(token)).join('-');
-}
-function mediaKind(filename) {
-  const name = String(filename || '').toLowerCase();
-  const tokens = new Set(mediaTokens(name));
-  const isGif = /\.gif(?:$|\?)/i.test(name) ||
-    ((tokens.has('box') || tokens.has('jewelry') || tokens.has('jewellery')) &&
-     (tokens.has('opening') || tokens.has('open') || tokens.has('animation') || tokens.has('animated')));
-  const isAr = tokens.has('ar') || tokens.has('tryon') ||
-    (tokens.has('try') && tokens.has('on')) || tokens.has('transparent') ||
-    tokens.has('transparency') || tokens.has('overlay') || tokens.has('cutout');
-  return { isGif, isAr };
-}
-function findAssociatedMedia(allFiles, baseId, kind) {
-  const wanted = normalizedMediaStem(baseId);
-  if (!wanted) return null;
-  const candidates = allFiles.filter(file => {
-    const detected = mediaKind(file.name);
-    if (kind === 'gif' && !detected.isGif) return false;
-    if (kind === 'ar' && !detected.isAr) return false;
-    return normalizedMediaStem(file.name) === wanted;
-  });
-  // Prefer a file in a media-specific folder, then the newest upload.
-  candidates.sort((a, b) => {
-    const aPath = String(a.filePath || a.path || '').toLowerCase();
-    const bPath = String(b.filePath || b.path || '').toLowerCase();
-    const aPreferred = /(ar|try.?on|gif|box|animation)/.test(aPath) ? 1 : 0;
-    const bPreferred = /(ar|try.?on|gif|box|animation)/.test(bPath) ? 1 : 0;
-    if (aPreferred !== bPreferred) return bPreferred - aPreferred;
-    return String(b.updatedAt || b.createdAt || '').localeCompare(String(a.updatedAt || a.createdAt || ''));
-  });
-  return candidates[0] || null;
-}
-
 export default async function handler(request) {
   const forceRefresh = (() => { try { return new URL(request.url).searchParams.get('refresh') === '1'; } catch { return false; } })();
   if (!forceRefresh && memoryCache && Date.now() - memoryCache.savedAt < SERVER_CACHE_TTL) {
@@ -208,8 +166,20 @@ export default async function handler(request) {
         .map(([, file]) => file);
       if (!orderedImages.length) continue;
       const firstImage = orderedImages[0];
-      const arFile = findAssociatedMedia(allFiles, baseId, 'ar');
-      const gifFile = findAssociatedMedia(allFiles, baseId, 'gif');
+
+      const arCandidates = [
+        `${baseId}-ar.png`, `${baseId}-ar.webp`, `${baseId}-ar.jpg`, `${baseId}-ar.jpeg`, `${baseId}-ar.avif`,
+        `${baseId}-set-ar.png`, `${baseId}-set-ar.webp`, `${baseId}-set-ar.jpg`, `${baseId}-set-ar.jpeg`, `${baseId}-set-ar.avif`
+      ];
+
+      const gifCandidates = [
+        `${baseId}-box-opening.gif`,
+        `${baseId}-jewelry-box-opening.gif`,
+        `${baseId}-set-jewelry-box-opening.gif`
+      ];
+
+      const arFile = arCandidates.map(name => byName.get(name.toLowerCase())).find(Boolean);
+      const gifFile = gifCandidates.map(name => byName.get(name.toLowerCase())).find(Boolean);
       const metadata = firstImage.customMetadata || {};
       if (!booleanValue(metadata.active, true)) continue;
 
@@ -219,10 +189,10 @@ export default async function handler(request) {
         description: metadata.description || metadata.productDescription || 'A coordinated jewelry set from The Global Rani collection.',
         price: 0,
         category: metadata.category || 'Jewelry Set',
-        images: orderedImages.map(file => file.url),
-        image: firstImage.url,
-        arImage: arFile?.url || '',
-        boxGif: gifFile?.url || ''
+        images: orderedImages.map(versionedFileUrl),
+        image: versionedFileUrl(firstImage),
+        arImage: versionedFileUrl(arFile),
+        boxGif: versionedFileUrl(gifFile)
       });
     }
 
@@ -243,7 +213,7 @@ export default async function handler(request) {
       incompleteProducts
     };
     memoryCache = { savedAt: Date.now(), body: payload };
-    return json(payload, 200, forceRefresh ? 'REFRESH' : 'MISS', forceRefresh);
+    return json(payload, 200, 'MISS', forceRefresh);
   } catch (error) {
     return json({
       error: 'Jewelry products could not be loaded.',

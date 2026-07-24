@@ -371,45 +371,28 @@
 (function () {
   const DEFAULT_TTL = 30 * 60 * 1000;
   window.globalRaniCachedJson = async function globalRaniCachedJson(url, options = {}) {
-    // Product/media availability must be checked again on every page load.
-    // A unique refresh request bypasses browser, CDN, and Netlify function caches.
-    const forceRefresh = options.forceRefresh !== false;
     const ttl = Number(options.ttl) > 0 ? Number(options.ttl) : DEFAULT_TTL;
-    const cacheKey = `global-rani-api-cache:v3:${url}`;
+    const force = options.force === true;
+    const cacheKey = `global-rani-api-cache:v2:${url}`;
     const now = Date.now();
-
-    if (!forceRefresh) {
-      try {
-        const saved = localStorage.getItem(cacheKey);
-        if (saved) {
-          const entry = JSON.parse(saved);
-          if (entry && entry.savedAt && now - entry.savedAt < ttl && entry.data) return entry.data;
-        }
-      } catch (_) {}
-    }
-
     try {
-      const requestUrl = new URL(url, window.location.href);
-      if (forceRefresh) {
-        requestUrl.searchParams.set('refresh', '1');
-        requestUrl.searchParams.set('_gr', String(now));
+      const saved = localStorage.getItem(cacheKey);
+      if (!force && saved) {
+        const entry = JSON.parse(saved);
+        if (entry && entry.savedAt && now - entry.savedAt < ttl && entry.data) return entry.data;
       }
-      const response = await fetch(requestUrl.toString(), {
-        cache: forceRefresh ? 'no-store' : 'default',
-        headers: forceRefresh ? { 'Cache-Control': 'no-cache', 'Pragma': 'no-cache' } : undefined
-      });
+    } catch (_) {}
+    try {
+      const requestUrl = force ? `${url}${url.includes('?') ? '&' : '?'}refresh=1&_=${now}` : url;
+      const response = await fetch(requestUrl, { cache: force ? 'no-store' : 'default' });
       const data = await response.json().catch(() => ({}));
       if (!response.ok) throw new Error(data.error || `API returned ${response.status}`);
       try { localStorage.setItem(cacheKey, JSON.stringify({ savedAt: now, data })); } catch (_) {}
       return data;
     } catch (error) {
-      // Keep the most recent successful catalog as an offline/error fallback only.
       try {
         const saved = localStorage.getItem(cacheKey);
-        if (saved) {
-          const entry = JSON.parse(saved);
-          if (entry && entry.data) return entry.data;
-        }
+        if (saved) { const entry = JSON.parse(saved); if (entry && entry.data) return entry.data; }
       } catch (_) {}
       throw error;
     }
@@ -434,24 +417,15 @@
   let currentPage = 1;
   let visibleCount = PAGE_SIZE;
   const productRegistry = new Map();
-  const mediaRefreshToken = Date.now();
-  const refreshMediaUrl = value => {
-    const raw = String(value || '').trim();
-    if (!raw) return '';
-    try {
-      const url = new URL(raw, window.location.href);
-      url.searchParams.set('_grmedia', String(mediaRefreshToken));
-      return url.toString();
-    } catch (_) {
-      return raw + (raw.includes('?') ? '&' : '?') + '_grmedia=' + mediaRefreshToken;
-    }
-  };
+  let lastCatalogSignature = '';
+  let refreshInFlight = false;
+  const LIVE_REFRESH_MS = 60 * 1000;
 
   const fallbackProducts = [
-    { id:'maharani-manika-topaz-set', name:'Maharani Manika Topaz Set', description:'A regal topaz-toned statement set with matching earrings.', price:1, images:[1,2,3].map(n=>CDN+`maharani-manika-topaz-set-${n}.png`), arImage:'', boxGif:'' },
-    { id:'maharani-manika-gulabi-set', name:'Maharani Manika Gulabi Set', description:'A romantic gulabi-hued jewelry set for weddings and festive celebrations.', price:65, images:[1,2,3].map(n=>CDN+`maharani-manika-gulabi-set-${n}.png`), arImage:'', boxGif:'' },
-    { id:'rajwadi-navratna-set', name:'Rajwadi Navratna Set', description:'A royal navratna-inspired set featuring rich multicolored detailing.', price:85, images:[1,2,3].map(n=>CDN+`rajwadi-navratna-set-${n}.png`), arImage:'', boxGif:'' },
-    { id:'maharani-manika-ruby-set', name:'Maharani Manika Ruby Set', description:'A bold ruby-toned Maharani set designed for grand occasions.', price:65, images:[1,2,3].map(n=>CDN+`maharani-manika-ruby-set-${n}.png`), arImage:'', boxGif:'' }
+    { id:'maharani-manika-topaz-set', name:'Maharani Manika Topaz Set', description:'A regal topaz-toned statement set with matching earrings.', price:1, images:[1,2,3].map(n=>CDN+`maharani-manika-topaz-set-${n}.png`), arImage:CDN+'maharani-manika-topaz-set-ar.png', boxGif:CDN+'maharani-manika-topaz-jewelry-box-opening.gif' },
+    { id:'maharani-manika-gulabi-set', name:'Maharani Manika Gulabi Set', description:'A romantic gulabi-hued jewelry set for weddings and festive celebrations.', price:65, images:[1,2,3].map(n=>CDN+`maharani-manika-gulabi-set-${n}.png`), arImage:CDN+'maharani-manika-gulabi-set-ar.png', boxGif:CDN+'maharani-manika-gulabi-jewelry-box-opening.gif' },
+    { id:'rajwadi-navratna-set', name:'Rajwadi Navratna Set', description:'A royal navratna-inspired set featuring rich multicolored detailing.', price:85, images:[1,2,3].map(n=>CDN+`rajwadi-navratna-set-${n}.png`), arImage:CDN+'rajwadi-navratna-set-ar.png', boxGif:CDN+'rajwadi-navratna-jewelry-box-opening.gif' },
+    { id:'maharani-manika-ruby-set', name:'Maharani Manika Ruby Set', description:'A bold ruby-toned Maharani set designed for grand occasions.', price:65, images:[1,2,3].map(n=>CDN+`maharani-manika-ruby-set-${n}.png`), arImage:CDN+'maharani-manika-ruby-set-ar.png', boxGif:CDN+'maharani-manika-ruby-jewelry-box-opening.gif' }
   ];
 
   const safe = value => String(value || '').replace(/[&<>"']/g, ch => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[ch]));
@@ -471,8 +445,8 @@
       price: Number(raw.price ?? raw.priceUSD ?? 85) || 85,
       images,
       image: images[0] || '',
-      arImage: refreshMediaUrl(raw.arImage),
-      boxGif: refreshMediaUrl(raw.boxGif)
+      arImage: raw.arImage || '',
+      boxGif: raw.boxGif || ''
     };
   }
 
@@ -663,13 +637,19 @@
     if (notice) notice.remove();
   }
 
-  async function loadProducts() {
+  async function loadProducts(force = false) {
+    if (refreshInFlight) return;
+    refreshInFlight = true;
     // Show the original cards immediately. New ImageKit products are then merged in.
-    render(fallbackProducts);
+    if (!lastCatalogSignature) render(fallbackProducts);
     try {
-      const data = await window.globalRaniCachedJson(API_URL);
+      const data = await window.globalRaniCachedJson(API_URL, { force, ttl: 60 * 1000 });
       const products = Array.isArray(data) ? data : data.products;
       if (!Array.isArray(products)) throw new Error('The product API did not return a product list.');
+
+      const nextSignature = JSON.stringify(products.map(item => ({ id:item.id, images:item.images, arImage:item.arImage, boxGif:item.boxGif, price:item.price, name:item.name })));
+      if (force && nextSignature === lastCatalogSignature) return;
+      lastCatalogSignature = nextSignature;
 
       const merged = new Map();
       fallbackProducts.forEach(item => merged.set(item.id, normalizeProduct(item)));
@@ -687,10 +667,17 @@
     } catch (error) {
       console.warn('Automatic ImageKit catalog unavailable:', error);
       showCatalogNotice(`The original products are visible, but automatic ImageKit products could not load: ${error.message}`, true);
+    } finally {
+      refreshInFlight = false;
     }
   }
 
-  loadProducts();
+  // Scan ImageKit immediately on first page load, then keep product media live.
+  loadProducts(true);
+  window.setInterval(() => { if (!document.hidden) loadProducts(true); }, LIVE_REFRESH_MS);
+  window.addEventListener('focus', () => loadProducts(true));
+  window.addEventListener('pageshow', () => loadProducts(true));
+  document.addEventListener('visibilitychange', () => { if (!document.hidden) loadProducts(true); });
 })();
 </script>
 
