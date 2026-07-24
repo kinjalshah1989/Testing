@@ -371,26 +371,45 @@
 (function () {
   const DEFAULT_TTL = 30 * 60 * 1000;
   window.globalRaniCachedJson = async function globalRaniCachedJson(url, options = {}) {
+    // Product/media availability must be checked again on every page load.
+    // A unique refresh request bypasses browser, CDN, and Netlify function caches.
+    const forceRefresh = options.forceRefresh !== false;
     const ttl = Number(options.ttl) > 0 ? Number(options.ttl) : DEFAULT_TTL;
-    const cacheKey = `global-rani-api-cache:v2:${url}`;
+    const cacheKey = `global-rani-api-cache:v3:${url}`;
     const now = Date.now();
+
+    if (!forceRefresh) {
+      try {
+        const saved = localStorage.getItem(cacheKey);
+        if (saved) {
+          const entry = JSON.parse(saved);
+          if (entry && entry.savedAt && now - entry.savedAt < ttl && entry.data) return entry.data;
+        }
+      } catch (_) {}
+    }
+
     try {
-      const saved = localStorage.getItem(cacheKey);
-      if (saved) {
-        const entry = JSON.parse(saved);
-        if (entry && entry.savedAt && now - entry.savedAt < ttl && entry.data) return entry.data;
+      const requestUrl = new URL(url, window.location.href);
+      if (forceRefresh) {
+        requestUrl.searchParams.set('refresh', '1');
+        requestUrl.searchParams.set('_gr', String(now));
       }
-    } catch (_) {}
-    try {
-      const response = await fetch(url, { cache: 'default' });
+      const response = await fetch(requestUrl.toString(), {
+        cache: forceRefresh ? 'no-store' : 'default',
+        headers: forceRefresh ? { 'Cache-Control': 'no-cache', 'Pragma': 'no-cache' } : undefined
+      });
       const data = await response.json().catch(() => ({}));
       if (!response.ok) throw new Error(data.error || `API returned ${response.status}`);
       try { localStorage.setItem(cacheKey, JSON.stringify({ savedAt: now, data })); } catch (_) {}
       return data;
     } catch (error) {
+      // Keep the most recent successful catalog as an offline/error fallback only.
       try {
         const saved = localStorage.getItem(cacheKey);
-        if (saved) { const entry = JSON.parse(saved); if (entry && entry.data) return entry.data; }
+        if (saved) {
+          const entry = JSON.parse(saved);
+          if (entry && entry.data) return entry.data;
+        }
       } catch (_) {}
       throw error;
     }

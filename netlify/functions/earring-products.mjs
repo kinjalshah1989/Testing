@@ -3,10 +3,10 @@ const IMAGEKIT_FOLDER = '/global-rani-earrings';
 const SERVER_CACHE_TTL = 15 * 60 * 1000;
 let memoryCache = null;
 
-function json(body, status = 200, cacheStatus = 'MISS') {
+function json(body, status = 200, cacheStatus = 'MISS', noStore = false) {
   return new Response(JSON.stringify(body, null, 2), {
     status,
-    headers: { 'Content-Type': 'application/json; charset=utf-8', 'Cache-Control': status === 200 ? 'public, max-age=300, s-maxage=900, stale-while-revalidate=86400' : 'no-store, max-age=0',
+    headers: { 'Content-Type': 'application/json; charset=utf-8', 'Cache-Control': noStore || status !== 200 ? 'no-store, max-age=0' : 'public, max-age=300, s-maxage=900, stale-while-revalidate=86400',
       'X-Global-Rani-Cache': cacheStatus }
   });
 }
@@ -92,7 +92,7 @@ export default async function handler(request) {
     products.sort((a,b)=>a.name.localeCompare(b.name));
     const payload = { products, count:products.length, folder:wantedFolder, filesSeenInProductFolder:files.length, filenamesSeen:files.map(f=>f.name), incompleteProducts };
     memoryCache = { savedAt:Date.now(), body:payload };
-    return json(payload, 200, 'MISS');
+    return json(payload, 200, forceRefresh ? 'REFRESH' : 'MISS', forceRefresh);
   } catch(error) { return json({ error:'Earring products could not be loaded.', detail:error?.message||String(error) },500); }
 }
 export const config = { path:'/api/earring-products' };
