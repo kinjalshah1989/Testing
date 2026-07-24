@@ -499,14 +499,50 @@
     return frame;
   }
 
-  function populateCategories(items) {
-    const categories = [...new Set(items.map(product => product.category).filter(Boolean))].sort();
-    filter.innerHTML = '<option value="all">All categories</option>' + categories.map(category => `<option value="${safe(category)}">${safe(category)}</option>`).join('');
+  const CATEGORY_PAGES = [
+    { id: 'jewelry-sets', label: 'Jewelry Sets', url: 'jewelry-sets.html', api: '/api/jewelry-products' },
+    { id: 'earrings', label: 'Earrings', url: 'earrings.html', api: '/api/earring-products' },
+    { id: 'bangles-kadas', label: 'Bangles & Kadas', url: 'bangles-kadas.html', api: '/api/bangle-products' }
+  ];
+
+  function currentCatalogCategory() {
+    const page = location.pathname.split('/').pop() || '';
+    if (page === 'jewelry-sets.html' || page === 'set-colors.html') return 'jewelry-sets';
+    if (page === 'earrings.html') return 'earrings';
+    if (page === 'bangles-kadas.html') return 'bangles-kadas';
+    if (page === 'category-variants.html') {
+      const requested = new URLSearchParams(location.search).get('category');
+      return requested === 'bangles' ? 'bangles-kadas' : (requested || '');
+    }
+    return '';
+  }
+
+  function catalogItemsFromResponse(data) {
+    if (Array.isArray(data)) return data;
+    if (Array.isArray(data?.collections)) return data.collections;
+    if (Array.isArray(data?.products)) return data.products;
+    return [];
+  }
+
+  async function populateCategories() {
+    const selectedCategory = currentCatalogCategory();
+    const checks = await Promise.all(CATEGORY_PAGES.map(async category => {
+      try {
+        const data = await window.globalRaniCachedJson(category.api, { ttl: 60 * 1000 });
+        return catalogItemsFromResponse(data).length > 0 ? category : null;
+      } catch (_) {
+        return category.id === selectedCategory && allProducts.length > 0 ? category : null;
+      }
+    }));
+    const activeCategories = checks.filter(Boolean);
+    filter.innerHTML = '<option value="all">All categories</option>' + activeCategories.map(category =>
+      `<option value="${category.id}"${category.id === selectedCategory ? ' selected' : ''}>${safe(category.label)}</option>`
+    ).join('');
+    filter.setAttribute('aria-label', 'Open a product category');
   }
 
   function applyFilter(reset = true) {
-    const value = filter.value;
-    filteredProducts = value === 'all' ? allProducts : allProducts.filter(product => product.category === value);
+    filteredProducts = allProducts;
     if (reset) { currentPage = 1; visibleCount = PAGE_SIZE; }
     renderPage();
   }
@@ -530,11 +566,16 @@
 
   function render(products) {
     allProducts = products.map(normalizeProduct).filter(product => product.id);
-    populateCategories(allProducts);
     applyFilter(true);
+    populateCategories();
   }
 
-  filter.addEventListener('change', () => applyFilter(true));
+  filter.addEventListener('change', () => {
+    const destination = CATEGORY_PAGES.find(category => category.id === filter.value);
+    if (destination) window.location.href = destination.url;
+    else if (filter.value === 'all') window.location.href = '../index.html#categories';
+    else filter.value = currentCatalogCategory() || 'all';
+  });
   loadMore.addEventListener('click', () => { visibleCount += PAGE_SIZE; renderPage(); });
   prevPage.addEventListener('click', () => {
     if (currentPage > 1) { currentPage -= 1; visibleCount = PAGE_SIZE; renderPage(); grid.scrollIntoView({ behavior:'smooth', block:'start' }); }
