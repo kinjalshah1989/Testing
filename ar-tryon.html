@@ -1,14 +1,17 @@
 <!DOCTYPE html>
-
 <html lang="en">
 <head>
-<meta charset="utf-8"/>
-<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
-<title>Virtual Try-On | The Global Rani</title>
-<link crossorigin="" href="https://cdn.jsdelivr.net" rel="preconnect"/>
-<link crossorigin="" href="https://storage.googleapis.com" rel="preconnect"/>
-<link as="fetch" crossorigin="" href="https://storage.googleapis.com/mediapipe-models/face_landmarker/face_landmarker/float16/latest/face_landmarker.task" rel="preload"/>
-<style>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Virtual Try-On | The Global Rani</title>
+  <meta name="description" content="Use The Global Rani virtual try-on experience to preview selected jewelry styles.">
+
+  <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin>
+  <link rel="preconnect" href="https://storage.googleapis.com" crossorigin>
+  <link rel="preload" href="https://storage.googleapis.com/mediapipe-models/face_landmarker/face_landmarker/float16/latest/face_landmarker.task" as="fetch" crossorigin>
+
+
+  <style>
     * { box-sizing: border-box; }
 
     :root {
@@ -383,62 +386,61 @@
       }
     }
   </style>
-<style data-universal-logout-style="">.profile-dropdown .global-profile-logout{display:block;width:100%;position:relative;z-index:2;padding:11px 14px;border:0;border-radius:14px;background:transparent;color:var(--ruby,#9e1533);font:inherit;font-size:14px;font-weight:900;white-space:nowrap;text-align:center;cursor:pointer}.profile-dropdown .global-profile-logout:hover{background:linear-gradient(135deg,rgba(158,21,51,.10),rgba(185,133,47,.16));color:var(--ruby,#9e1533)}.profile-dropdown .global-profile-logout[hidden]{display:none!important}.profile-dropdown .global-profile-logout:disabled{opacity:.65;cursor:wait}</style>
-<style data-profile-auth-menu-state>
-.profile-dropdown[data-auth-menu-state="signed-in"] [data-universal-member-link],
-.profile-dropdown[data-auth-menu-state="signed-in"] [data-universal-login-link] { display: none !important; }
-.profile-dropdown[data-auth-menu-state="signed-in"] .global-profile-logout { display: block !important; width: 100%; }
-.profile-dropdown[data-auth-menu-state="signed-out"] .global-profile-logout { display: none !important; }
-</style>
-
-<style data-logout-only-menu-fix>
-.profile-dropdown[data-auth-menu-state="signed-in"] > :not(.global-profile-logout){display:none!important}
-.profile-dropdown[data-auth-menu-state="signed-in"] .global-profile-logout{display:block!important;width:100%!important}
-</style>
+  <link rel="stylesheet" href="assets/global-rani-quality.css">
 </head>
+
 <body>
-<div class="app">
-<video autoplay="" id="video" muted="" playsinline=""></video>
-<canvas id="canvas"></canvas>
-<div class="topbar">
-<div class="brand">
-<a class="brand-mark" href="index.html" style="text-decoration:none" title="Back to The Global Rani">GR</a>
-<div>
-<h1>The Global Rani Virtual Try-On</h1>
-<p id="selectedTryOnLabel">Virtual jewelry fitting</p>
-</div>
-</div>
-<div class="actions">
-<a class="home-link" href="index.html">Home</a><button id="startBtn">Start Camera to See How It Looks on You</button>
-<button class="active" id="trackingBtn">Tracking On</button>
-<button class="active" id="necklaceBtn">Necklace</button>
-<button class="active" id="earringsBtn">Earrings</button>
-<button id="resetBtn">Reset Fit</button>
-</div>
-</div>
-<div class="selected-badge hidden" id="selectedBadge">Selected try-on piece</div>
-<div class="overlay">
-<img alt="Necklace overlay" class="piece" decoding="async" id="necklace" loading="lazy" src="https://ik.imagekit.io/k0wpvuatq/ar-necklace-clean.png"/>
-<img alt="Left earring overlay" class="piece" decoding="async" id="leftEarring" loading="lazy" src="https://ik.imagekit.io/k0wpvuatq/ar-left-earring-clean.png"/>
-<img alt="Right earring overlay" class="piece" decoding="async" id="rightEarring" loading="lazy" src="https://ik.imagekit.io/k0wpvuatq/ar-right-earring-clean.png"/>
-</div>
-<div class="panel">
-<h2>Better try-on controls</h2>
-<p id="tryOnHelpText">Start the camera, then drag and resize the jewelry to fine-tune the fit.</p>
-<div class="row"><span>Overall Size</span><input id="sizeSlider" max="150" min="75" type="range" value="76"/><output id="sizeOut">76%</output></div>
-<div class="row"><span>Necklace Y</span><input id="neckYSlider" max="130" min="-80" type="range" value="130"/><output id="neckYOut">130</output></div>
-<div class="row"><span>Necklace Width</span><input id="neckWSlider" max="135" min="75" type="range" value="100"/><output id="neckWOut">100%</output></div>
-<div class="row"><span>Earring Y</span><input id="earYSlider" max="90" min="-50" type="range" value="4"/><output id="earYOut">4</output></div>
-<div class="row"><span>Earring Size</span><input id="earSizeSlider" max="140" min="60" type="range" value="88"/><output id="earSizeOut">88%</output></div>
-<div class="row"><span>Opacity</span><input id="opacitySlider" max="100" min="50" type="range" value="96"/><output id="opacityOut">96%</output></div>
-</div>
-<div class="card">
-<img alt="Selected product source" decoding="async" id="sourcePreview" loading="lazy" src="https://ik.imagekit.io/k0wpvuatq/ar-product-original.png"/>
-<p id="sourceCaption">Selected Royal Drops product used for the AR overlay</p>
-</div>
-<div class="status" id="status">Click Start Camera and allow camera access.</div>
-</div>
-<script type="module">
+  <div class="app">
+    <video id="video" autoplay playsinline muted></video>
+    <canvas id="canvas"></canvas>
+
+    <div class="topbar">
+      <div class="brand">
+        <a class="brand-mark" href="index.html" title="Back to The Global Rani" style="text-decoration:none">GR</a>
+        <div>
+          <h1>The Global Rani Virtual Try-On</h1>
+          <p id="selectedTryOnLabel">Virtual jewelry fitting</p>
+        </div>
+      </div>
+
+      <div class="actions">
+        <a class="home-link" href="index.html">Home</a><button id="startBtn">Start Camera to See How It Looks on You</button>
+        <button id="trackingBtn" class="active">Tracking On</button>
+        <button id="necklaceBtn" class="active">Necklace</button>
+        <button id="earringsBtn" class="active">Earrings</button>
+        <button id="resetBtn">Reset Fit</button>
+      </div>
+    </div>
+
+    <div id="selectedBadge" class="selected-badge hidden">Selected try-on piece</div>
+
+    <div class="overlay">
+      <img id="necklace" class="piece" src="https://ik.imagekit.io/k0wpvuatq/ar-necklace-clean.png" alt="Necklace overlay" loading="lazy" decoding="async">
+      <img id="leftEarring" class="piece" src="https://ik.imagekit.io/k0wpvuatq/ar-left-earring-clean.png" alt="Left earring overlay" loading="lazy" decoding="async">
+      <img id="rightEarring" class="piece" src="https://ik.imagekit.io/k0wpvuatq/ar-right-earring-clean.png" alt="Right earring overlay" loading="lazy" decoding="async">
+    </div>
+
+    <div class="panel">
+      <h2>Better try-on controls</h2>
+      <p id="tryOnHelpText">Start the camera, then drag and resize the jewelry to fine-tune the fit.</p>
+
+      <div class="row"><label for="sizeSlider">Overall Size</label><input id="sizeSlider" type="range" min="75" max="150" value="76"><output id="sizeOut">76%</output></div>
+      <div class="row"><label for="neckYSlider">Necklace Y</label><input id="neckYSlider" type="range" min="-80" max="130" value="130"><output id="neckYOut">130</output></div>
+      <div class="row"><label for="neckWSlider">Necklace Width</label><input id="neckWSlider" type="range" min="75" max="135" value="100"><output id="neckWOut">100%</output></div>
+      <div class="row"><label for="earYSlider">Earring Y</label><input id="earYSlider" type="range" min="-50" max="90" value="4"><output id="earYOut">4</output></div>
+      <div class="row"><label for="earSizeSlider">Earring Size</label><input id="earSizeSlider" type="range" min="60" max="140" value="88"><output id="earSizeOut">88%</output></div>
+      <div class="row"><label for="opacitySlider">Opacity</label><input id="opacitySlider" type="range" min="50" max="100" value="96"><output id="opacityOut">96%</output></div>
+    </div>
+
+    <div class="card">
+      <img id="sourcePreview" src="https://ik.imagekit.io/k0wpvuatq/ar-product-original.png" alt="Selected product source" loading="lazy" decoding="async">
+      <p id="sourceCaption">Selected Royal Drops product used for the AR overlay</p>
+    </div>
+
+    <div id="status" class="status">Click Start Camera and allow camera access.</div>
+  </div>
+
+  <script type="module">
     import { FaceLandmarker, FilesetResolver, DrawingUtils } from "https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.18";
 
     const app = document.querySelector(".app");
@@ -1256,6 +1258,7 @@
       statusEl.textContent = "Fit reset.";
     });
   </script>
+
 <style id="offscreen-animation-pause-style">
   .is-offscreen, .is-offscreen *, .page-hidden, .page-hidden * {
     animation-play-state: paused !important;
@@ -1310,9 +1313,11 @@
     !document.hidden && !!el && !el.closest('.is-offscreen') && el.getClientRects().length > 0;
 })();
 </script>
+
+
 <!-- Global Rani background music: shared across pages in the current browser tab. -->
-<audio autoplay="" id="globalRaniMusic" loop="" playsinline="" preload="auto">
-<source src="https://ik.imagekit.io/k0wpvuatq/global-rani-music.mp3" type="audio/mpeg"/>
+<audio id="globalRaniMusic" autoplay loop preload="auto" playsinline>
+  <source src="https://ik.imagekit.io/k0wpvuatq/global-rani-music.mp3" type="audio/mpeg">
 </audio>
 <script id="global-rani-music-controller">
 (() => {
@@ -1342,12 +1347,16 @@
   });
 })();
 </script>
+
+
 <style id="global-rani-whatsapp-help-style">
 .global-rani-whatsapp-help{position:fixed;right:20px;bottom:20px;z-index:9999;display:inline-flex;align-items:center;gap:9px;padding:13px 18px;border-radius:999px;text-decoration:none;color:#fff!important;background:linear-gradient(135deg,#128c4a,#25d366);font-family:Inter,Arial,sans-serif;font-weight:900;font-size:14px;box-shadow:0 14px 34px rgba(18,140,74,.32);border:1px solid rgba(255,255,255,.55);transition:transform .2s ease,box-shadow .2s ease}
 .global-rani-whatsapp-help:hover{transform:translateY(-3px);box-shadow:0 18px 40px rgba(18,140,74,.4)}
 .global-rani-whatsapp-help .wa-icon{font-size:20px;line-height:1}
 @media(max-width:620px){.global-rani-whatsapp-help{right:14px;bottom:14px;padding:12px 15px;font-size:13px}}
 </style>
-<a aria-label="Need help? Contact The Global Rani on WhatsApp" class="global-rani-whatsapp-help" href="https://wa.me/12164570935?text=Hello%20Global%20Rani%2C%20I%20need%20help." rel="noopener noreferrer" target="_blank"><span aria-hidden="true" class="wa-icon">◉</span><span>Need help?</span></a>
-<script data-universal-profile-auth="" src="universal-profile-auth.js" type="module"></script></body>
+<a class="global-rani-whatsapp-help" href="https://wa.me/12164570935?text=Hello%20Global%20Rani%2C%20I%20need%20help." target="_blank" rel="noopener noreferrer" aria-label="Need help? Contact The Global Rani on WhatsApp"><span class="wa-icon" aria-hidden="true">◉</span><span>Need help?</span></a>
+
+  <script src="assets/global-rani-quality.js" defer></script>
+</body>
 </html>

@@ -1,14 +1,15 @@
 <!DOCTYPE html>
-
 <html lang="en">
 <head>
-<meta charset="utf-8"/>
-<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
-<title>Member Profile | The Global Rani</title>
-<link href="https://fonts.googleapis.com" rel="preconnect"/>
-<link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
-<link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@500;600;700;800&amp;family=Inter:wght@400;500;600;700;800&amp;display=swap" rel="stylesheet"/>
-<style>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Member Profile | The Global Rani</title>
+  <meta name="description" content="Sign in, create an account, and manage your Global Rani member profile.">
+  <meta name="robots" content="noindex,nofollow">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@500;600;700;800&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <style>
     .profile-dropdown [hidden] {
   display: none !important;
   }   
@@ -364,99 +365,88 @@
 
     .cart-tax-shipping-note{margin:5px 0 0;font-size:14px;color:#5d554d;line-height:1.4;}
 </style>
-<style data-universal-logout-style="">.profile-dropdown .global-profile-logout{display:block;width:100%;position:relative;z-index:2;padding:11px 14px;border:0;border-radius:14px;background:transparent;color:var(--ruby,#9e1533);font:inherit;font-size:14px;font-weight:900;white-space:nowrap;text-align:center;cursor:pointer}.profile-dropdown .global-profile-logout:hover{background:linear-gradient(135deg,rgba(158,21,51,.10),rgba(185,133,47,.16));color:var(--ruby,#9e1533)}.profile-dropdown .global-profile-logout[hidden]{display:none!important}.profile-dropdown .global-profile-logout:disabled{opacity:.65;cursor:wait}</style>
-<style data-profile-auth-menu-state>
-.profile-dropdown[data-auth-menu-state="signed-in"] [data-universal-member-link],
-.profile-dropdown[data-auth-menu-state="signed-in"] [data-universal-login-link] { display: none !important; }
-.profile-dropdown[data-auth-menu-state="signed-in"] .global-profile-logout { display: block !important; width: 100%; }
-.profile-dropdown[data-auth-menu-state="signed-out"] .global-profile-logout { display: none !important; }
-</style>
-
-<style data-universal-profile-arrow-fix>
-.profile-menu-wrap{position:relative!important}
-.profile-trigger{cursor:pointer!important}
-.profile-caret-badge{pointer-events:auto!important;cursor:pointer!important;z-index:5!important}
-.profile-menu-wrap.open .profile-dropdown{display:block!important;visibility:visible!important;opacity:1!important}
-.profile-dropdown[data-auth-menu-state="signed-in"] .global-profile-logout{display:block!important}
-</style>
-
-<style data-logout-only-menu-fix>
-.profile-dropdown[data-auth-menu-state="signed-in"] > :not(.global-profile-logout){display:none!important}
-.profile-dropdown[data-auth-menu-state="signed-in"] .global-profile-logout{display:block!important;width:100%!important}
-</style>
+  <link rel="stylesheet" href="assets/global-rani-quality.css">
 </head>
 <body>
-<div class="top-banner">We Ship Globally</div>
-<nav><div class="nav-inner"><a class="brand" href="index.html"><img alt="The Global Rani logo" src="https://ik.imagekit.io/k0wpvuatq/global-rani-logo.png"/><span>The Global Rani</span></a><div class="nav-actions"><div class="profile-menu-wrap"><button aria-expanded="false" aria-haspopup="true" aria-label="Open member profile sign up and login" class="profile-icon-link profile-trigger bloom-hover" title="Sign up or log in" type="button"><span class="profile-caret-badge">⌄</span></button><div class="profile-dropdown" role="menu"><a data-universal-member-link="" href="account.html" role="menuitem">Member Profile</a><a data-universal-login-link="" href="account.html?action=login" role="menuitem">Log in</a><button class="profile-dropdown-logout global-profile-logout" hidden="" role="menuitem" type="button">Log Out</button></div></div></div></div></nav>
-<main>
-<div class="hero"><div class="eyebrow">Member Profile</div><h1>Your Global Rani Account</h1></div>
-<section class="account-panel" id="accountPanel">
-<div class="choice-screen" id="choiceScreen">
-<div class="choice-card">
-<h2>Sign Up</h2>
-<button class="add-btn" id="createProfileChoice" type="button">Sign Up</button>
-</div>
-<div class="choice-card">
-<h2>Already a Member?</h2>
-<button class="mini-link" id="loginChoice" type="button">Login</button>
-</div>
-<div class="choice-card" id="guestCheckoutCard">
-<h2>Checkout as Guest</h2>
-<button class="add-btn" id="guestCheckoutChoice" type="button">Checkout as Guest</button>
-</div>
-</div>
-<div class="form-area" id="profileFormArea">
-<div class="tabs"><button class="tab-btn active" data-tab="signup" type="button">Sign Up</button><button class="tab-btn" data-tab="login" type="button">Log In</button></div>
-<section id="signup-section">
-<h2>Sign Up</h2>
-<form class="account-form" id="signupForm" novalidate="">
-<div class="field full"><label for="signup-email">Email</label><input autocomplete="email" id="signup-email" name="email" placeholder="Email" required="" type="email"/></div>
-<div class="field"><label for="signup-password">Password</label><input autocomplete="new-password" id="signup-password" minlength="6" name="password" placeholder="Password" required="" type="password"/></div>
-<div class="field"><label for="signup-confirm-password">Confirm Password</label><input autocomplete="new-password" id="signup-confirm-password" minlength="6" name="confirmPassword" placeholder="Confirm Password" required="" type="password"/></div>
-<p aria-live="polite" class="signup-inline-message" id="signupInlineMessage" role="status"></p>
-</form>
-<div class="actions"><button class="add-btn" form="signupForm" id="signup-btn" type="submit">Create Account</button></div>
-</section>
-<section id="login-section" style="display:none;">
-<h2>Login</h2>
-<form class="account-form" id="loginForm" novalidate="">
-<div class="field full"><label for="login-email">Email</label><input autocomplete="email" id="login-email" name="email" placeholder="Email" required="" type="email"/></div>
-<div class="field full"><label for="login-password">Password</label><input autocomplete="current-password" id="login-password" name="password" placeholder="Password" required="" type="password"/><p class="login-inline-error" id="loginInlineError" role="alert">Wrong password/username. Try again or click <button id="forgotPasswordLink" type="button">Forgot password/username?</button> for more options.</p></div>
-</form>
-<div class="actions"><button class="add-btn" form="loginForm" id="login-btn" type="submit">Login</button></div>
-</section>
-<div class="actions"><span class="status" id="accountStatus"></span></div>
-</div>
-</section>
-<section aria-live="polite" class="order-summary-section" id="orderSummarySection">
-<div class="order-summary-head">
-<div>
-<h2>Order Summary</h2>
-<p class="order-member-email" id="orderMemberEmail"></p>
-</div>
-<div class="order-summary-actions">
-<button class="order-refresh-btn" id="refreshOrdersBtn" type="button">Refresh Orders</button>
-</div>
-</div>
-<div class="current-cart-summary" id="currentCartSummary">
-<h3>Your Cart</h3>
-<div class="current-cart-items" id="currentCartItems"></div>
-<div class="current-cart-footer">
-<div>
-<div class="current-cart-total" id="currentCartTotal"></div>
-<p class="cart-tax-shipping-note">Taxes and <u>shipping</u> calculated at checkout</p>
-</div>
-<div class="current-cart-actions">
-<a class="order-secondary-action" hidden="" href="index.html#shop" id="orderContinueShopping">Continue to Shop</a>
-<a class="order-primary-action" href="index.html#shop" id="orderPrimaryAction">Continue to Shop</a>
-</div>
-</div>
-</div>
-<h3 class="previous-orders-title">Previous Orders</h3>
-<div class="order-list" id="memberOrderList"><div class="order-loading">Loading your orders…</div></div>
-</section>
-</main>
-<script type="module">
+  <div class="top-banner">We Ship Globally</div>
+  <nav><div class="nav-inner"><a class="brand" href="index.html"><img src="https://ik.imagekit.io/k0wpvuatq/global-rani-logo.png" alt="The Global Rani logo"><span>The Global Rani</span></a><div class="nav-actions"><div class="profile-menu-wrap"><button class="profile-icon-link profile-trigger bloom-hover" type="button" title="Sign up or log in" aria-label="Open member profile sign up and login" aria-haspopup="true" aria-expanded="false"><span class="profile-caret-badge">⌄</span></button><div class="profile-dropdown" role="menu"><a id="profileMemberLink" href="account.html" role="menuitem">Member Profile</a><a id="profileLoginLink" href="account.html?action=login" role="menuitem">Log in</a><button id="profileLogoutBtn" class="profile-dropdown-logout" type="button" role="menuitem" hidden>Log Out</button></div></div></div></div></nav>
+  <main>
+    <div class="hero"><div class="eyebrow">Member Profile</div><h1>Your Global Rani Account</h1></div>
+    <section class="account-panel" id="accountPanel">
+      <div class="choice-screen" id="choiceScreen">
+        <div class="choice-card">
+          <h2>Sign Up</h2>
+          
+          <button class="add-btn" type="button" id="createProfileChoice">Sign Up</button>
+        </div>
+        <div class="choice-card">
+          <h2>Already a Member?</h2>
+          
+          <button class="mini-link" type="button" id="loginChoice">Login</button>
+        </div>
+        <div class="choice-card" id="guestCheckoutCard">
+          <h2>Checkout as Guest</h2>
+          
+          <button class="add-btn" type="button" id="guestCheckoutChoice">Checkout as Guest</button>
+        </div>
+      </div>
+      <div class="form-area" id="profileFormArea">
+        <div class="tabs"><button class="tab-btn active" type="button" data-tab="signup">Sign Up</button><button class="tab-btn" type="button" data-tab="login">Log In</button></div>
+
+        <section id="signup-section">
+          <h2>Sign Up</h2>
+          <form class="account-form" id="signupForm" novalidate>
+            <div class="field full"><label for="signup-email">Email</label><input type="email" id="signup-email" name="email" autocomplete="email" required placeholder="Email"></div>
+            <div class="field"><label for="signup-password">Password</label><input type="password" id="signup-password" name="password" autocomplete="new-password" required minlength="6" placeholder="Password"></div>
+            <div class="field"><label for="signup-confirm-password">Confirm Password</label><input type="password" id="signup-confirm-password" name="confirmPassword" autocomplete="new-password" required minlength="6" placeholder="Confirm Password"></div>
+            <p class="signup-inline-message" id="signupInlineMessage" role="status" aria-live="polite"></p>
+          </form>
+          <div class="actions"><button class="add-btn" type="submit" id="signup-btn" form="signupForm">Create Account</button></div>
+        </section>
+
+        <section id="login-section" style="display:none;">
+          <h2>Login</h2>
+          <form class="account-form" id="loginForm" novalidate>
+            <div class="field full"><label for="login-email">Email</label><input type="email" id="login-email" name="email" autocomplete="email" required placeholder="Email"></div>
+            <div class="field full"><label for="login-password">Password</label><input type="password" id="login-password" name="password" autocomplete="current-password" required placeholder="Password"><p class="login-inline-error" id="loginInlineError" role="alert">Wrong password/username. Try again or click <button type="button" id="forgotPasswordLink">Forgot password/username?</button> for more options.</p></div>
+          </form>
+          <div class="actions"><button class="add-btn" type="submit" id="login-btn" form="loginForm">Login</button></div>
+        </section>
+
+        <div class="actions"><button class="logout-btn" type="button" id="logoutBtn">Log Out</button><span class="status" id="accountStatus"></span></div>
+      </div>
+    </section>
+
+    <section class="order-summary-section" id="orderSummarySection" aria-live="polite">
+      <div class="order-summary-head">
+        <div>
+          <h2>Order Summary</h2>
+          <p class="order-member-email" id="orderMemberEmail"></p>
+        </div>
+        <div class="order-summary-actions">
+          <button class="order-refresh-btn" type="button" id="refreshOrdersBtn">Refresh Orders</button>
+        </div>
+      </div>
+      <div class="current-cart-summary" id="currentCartSummary">
+        <h3>Your Cart</h3>
+        <div class="current-cart-items" id="currentCartItems"></div>
+        <div class="current-cart-footer">
+          <div>
+            <div class="current-cart-total" id="currentCartTotal"></div>
+            <p class="cart-tax-shipping-note">Taxes and <u>shipping</u> calculated at checkout</p>
+          </div>
+          <div class="current-cart-actions">
+            <a class="order-secondary-action" id="orderContinueShopping" href="index.html#shop" hidden>Continue to Shop</a>
+            <a class="order-primary-action" id="orderPrimaryAction" href="index.html#shop">Continue to Shop</a>
+          </div>
+        </div>
+      </div>
+      <h3 class="previous-orders-title">Previous Orders</h3>
+      <div class="order-list" id="memberOrderList"><div class="order-loading">Loading your orders…</div></div>
+    </section>
+
+  </main>
+  <script type="module">
     // Import Firebase tools
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
 
@@ -545,12 +535,12 @@
       document.querySelectorAll(".profile-icon-link").forEach(link => {
         link.classList.toggle("logged-in", !!user);
         link.title = user ? `Signed in as ${user.email || "member"}` : "Member profile";
-        link.setAttribute("aria-label", user ? "Open order summary" : "Open member profile sign up and login");
+        link.setAttribute("aria-label", user ? "Open member menu" : "Open member profile sign up and login");
         link.dataset.profileSignedIn = user ? "true" : "false";
         link.dataset.orderSummaryUrl = "account.html#order-summary";
       });
       if (profileMemberLink) {
-        profileMemberLink.hidden = false;
+        profileMemberLink.hidden = !!user;
         profileMemberLink.href = user ? "account.html#order-summary" : "account.html";
       }
       if (profileLoginLink) profileLoginLink.hidden = !!user;
@@ -1011,6 +1001,7 @@
       }
     });
   </script>
+
 <script>
   (function(){
     function closeProfileMenus(exceptWrap){
@@ -1025,13 +1016,6 @@
     document.addEventListener('click', function(event){
       const arrow = event.target.closest('.profile-trigger');
       if (arrow) {
-        const clickedCaret = !!event.target.closest('.profile-caret-badge');
-        if (arrow.dataset.profileSignedIn === 'true' && !clickedCaret) {
-          window.location.href = arrow.dataset.orderSummaryUrl || (location.pathname.includes('/categories/') ? '../account.html#order-summary' : 'account.html#order-summary');
-          event.preventDefault();
-          event.stopPropagation();
-          return;
-        }
         const wrap = arrow.closest('.profile-menu-wrap');
         const willOpen = !wrap.classList.contains('open');
         closeProfileMenus(wrap);
@@ -1102,9 +1086,11 @@
     !document.hidden && !!el && !el.closest('.is-offscreen') && el.getClientRects().length > 0;
 })();
 </script>
+
+
 <!-- Global Rani background music: shared across pages in the current browser tab. -->
-<audio autoplay="" id="globalRaniMusic" loop="" playsinline="" preload="auto">
-<source src="https://ik.imagekit.io/k0wpvuatq/global-rani-music.mp3" type="audio/mpeg"/>
+<audio id="globalRaniMusic" autoplay loop preload="auto" playsinline>
+  <source src="https://ik.imagekit.io/k0wpvuatq/global-rani-music.mp3" type="audio/mpeg">
 </audio>
 <script id="global-rani-music-controller">
 (() => {
@@ -1134,12 +1120,16 @@
   });
 })();
 </script>
+
+
 <style id="global-rani-whatsapp-help-style">
 .global-rani-whatsapp-help{position:fixed;right:20px;bottom:20px;z-index:9999;display:inline-flex;align-items:center;gap:9px;padding:13px 18px;border-radius:999px;text-decoration:none;color:#fff!important;background:linear-gradient(135deg,#128c4a,#25d366);font-family:Inter,Arial,sans-serif;font-weight:900;font-size:14px;box-shadow:0 14px 34px rgba(18,140,74,.32);border:1px solid rgba(255,255,255,.55);transition:transform .2s ease,box-shadow .2s ease}
 .global-rani-whatsapp-help:hover{transform:translateY(-3px);box-shadow:0 18px 40px rgba(18,140,74,.4)}
 .global-rani-whatsapp-help .wa-icon{font-size:20px;line-height:1}
 @media(max-width:620px){.global-rani-whatsapp-help{right:14px;bottom:14px;padding:12px 15px;font-size:13px}}
 </style>
-<a aria-label="Need help? Contact The Global Rani on WhatsApp" class="global-rani-whatsapp-help" href="https://wa.me/12164570935?text=Hello%20Global%20Rani%2C%20I%20need%20help." rel="noopener noreferrer" target="_blank"><span aria-hidden="true" class="wa-icon">◉</span><span>Need help?</span></a>
-<script data-universal-profile-auth="" src="universal-profile-auth.js" type="module"></script></body>
+<a class="global-rani-whatsapp-help" href="https://wa.me/12164570935?text=Hello%20Global%20Rani%2C%20I%20need%20help." target="_blank" rel="noopener noreferrer" aria-label="Need help? Contact The Global Rani on WhatsApp"><span class="wa-icon" aria-hidden="true">◉</span><span>Need help?</span></a>
+
+  <script src="assets/global-rani-quality.js" defer></script>
+</body>
 </html>
