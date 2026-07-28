@@ -4593,11 +4593,15 @@
 <style>
 .profile-dropdown .global-profile-logout{display:block;width:100%;position:relative;z-index:1;padding:11px 14px;border:0;border-radius:14px;background:transparent;color:var(--ruby,#9e1533);font:inherit;font-size:14px;font-weight:900;white-space:nowrap;text-align:center;cursor:pointer}.profile-dropdown .global-profile-logout:hover{background:linear-gradient(135deg,rgba(158,21,51,.10),rgba(185,133,47,.16));color:var(--ruby,#9e1533)}.profile-dropdown .global-profile-logout[hidden]{display:none!important}
 </style>
-
 <style id="global-rani-hover-surprise-styles">
-.global-rani-surprise-section{max-width:1380px;margin:0 auto;padding:58px 22px 70px;position:relative;overflow:hidden}.global-rani-surprise-heading{text-align:center;margin-bottom:30px}.global-rani-surprise-heading .eyebrow{font-size:12px;letter-spacing:.2em;text-transform:uppercase;color:#9e1533;font-weight:800}.global-rani-surprise-heading h2{font-family:'Cinzel',serif;color:var(--gold,#b9852f);font-size:clamp(32px,5vw,62px);margin:8px 0 12px}.global-rani-surprise-heading p{max-width:760px;margin:0 auto;line-height:1.7;color:#604c52}.global-rani-surprise-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:24px}.global-rani-surprise-card{position:relative;display:block;text-decoration:none;width:100%;padding:0;border:0;border-radius:30px;background:#f7eee7;overflow:hidden;cursor:pointer;box-shadow:0 22px 50px rgba(91,50,62,.14);isolation:isolate}.global-rani-surprise-card img{display:block;width:100%;height:auto;transition:opacity .28s ease,transform .35s ease,filter .35s ease}.global-rani-surprise-card .surprise-hover{position:absolute;inset:0;opacity:0;transform:translateY(18px) scale(.96)}.global-rani-surprise-card .surprise-label{position:absolute;left:50%;bottom:18px;z-index:4;transform:translateX(-50%);padding:10px 17px;border-radius:999px;background:rgba(255,255,255,.94);color:#8e1531;font-weight:900;letter-spacing:.06em;box-shadow:0 8px 22px rgba(83,40,53,.16)}.global-rani-surprise-card .surprise-hint{position:absolute;left:50%;top:18px;z-index:4;transform:translateX(-50%);padding:8px 13px;border-radius:999px;background:rgba(126,20,49,.88);color:#fff;font-size:11px;font-weight:800;letter-spacing:.12em;text-transform:uppercase;white-space:nowrap}.global-rani-surprise-card:hover .surprise-default,.global-rani-surprise-card.is-active .surprise-default{opacity:0;transform:scale(.985);filter:blur(1px)}.global-rani-surprise-card:hover .surprise-hover,.global-rani-surprise-card.is-active .surprise-hover{opacity:1;animation:globalRaniBasketJiggle .62s ease-in-out infinite alternate}.global-rani-surprise-card:hover .surprise-label,.global-rani-surprise-card.is-active .surprise-label{background:#8e1531;color:#fff}.global-rani-surprise-card:hover .surprise-hint,.global-rani-surprise-card.is-active .surprise-hint{background:#b9852f}@keyframes globalRaniBasketJiggle{0%{transform:translateY(-7px) rotate(-1.1deg) scale(1.018)}25%{transform:translateY(-13px) rotate(1.4deg) scale(1.035)}50%{transform:translateY(-10px) rotate(-1.5deg) scale(1.04)}75%{transform:translateY(-14px) rotate(1deg) scale(1.032)}100%{transform:translateY(-8px) rotate(-.7deg) scale(1.02)}}@media(max-width:900px){.global-rani-surprise-grid{grid-template-columns:1fr}.global-rani-surprise-section{padding:44px 16px 54px}.global-rani-surprise-card{max-width:520px;margin:0 auto}}@media(prefers-reduced-motion:reduce){.global-rani-surprise-card img{transition:none}.global-rani-surprise-card:hover .surprise-hover,.global-rani-surprise-card.is-active .surprise-hover{animation:none;transform:none}}
+.global-rani-surprise-section{width:min(100%,1380px);margin:0 auto;padding:58px clamp(14px,3vw,22px) 70px;position:relative;overflow:hidden}.global-rani-surprise-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:clamp(14px,2vw,24px);align-items:start}.global-rani-surprise-card{position:relative;display:block;text-decoration:none;width:100%;min-width:0;padding:0;border:0;border-radius:clamp(20px,2vw,30px);background:#f7eee7;overflow:hidden;cursor:pointer;box-shadow:0 22px 50px rgba(91,50,62,.14);isolation:isolate;touch-action:manipulation;-webkit-tap-highlight-color:transparent}.global-rani-surprise-card img{display:block;width:100%;height:auto;aspect-ratio:1/1;object-fit:cover;object-position:center top;transition:opacity .28s ease,transform .35s ease,filter .35s ease}.global-rani-surprise-card .surprise-hover{position:absolute;inset:0;opacity:0;transform:translateY(18px) scale(.96)}.global-rani-surprise-card .surprise-label{position:absolute;left:50%;bottom:clamp(12px,1.5vw,18px);z-index:4;transform:translateX(-50%);max-width:calc(100% - 24px);padding:clamp(8px,1vw,10px) clamp(14px,1.5vw,17px);border-radius:999px;background:rgba(255,255,255,.94);color:#8e1531;font-size:clamp(13px,1.25vw,16px);font-weight:900;letter-spacing:.06em;white-space:nowrap;box-shadow:0 8px 22px rgba(83,40,53,.16)}.global-rani-surprise-card:hover .surprise-default,.global-rani-surprise-card.is-active .surprise-default{opacity:0;transform:scale(.985);filter:blur(1px)}.global-rani-surprise-card:hover .surprise-hover,.global-rani-surprise-card.is-active .surprise-hover{opacity:1;animation:globalRaniBasketJiggle .62s ease-in-out infinite alternate}.global-rani-surprise-card:hover .surprise-label,.global-rani-surprise-card.is-active .surprise-label{background:#8e1531;color:#fff}@keyframes globalRaniBasketJiggle{0%{transform:translateY(-7px) rotate(-1.1deg) scale(1.018)}25%{transform:translateY(-13px) rotate(1.4deg) scale(1.035)}50%{transform:translateY(-10px) rotate(-1.5deg) scale(1.04)}75%{transform:translateY(-14px) rotate(1deg) scale(1.032)}100%{transform:translateY(-8px) rotate(-.7deg) scale(1.02)}}
+@media(max-width:1050px){.global-rani-surprise-grid{grid-template-columns:repeat(2,minmax(0,1fr));max-width:860px;margin:0 auto}.global-rani-surprise-card:last-child{grid-column:1/-1;width:min(100%,420px);justify-self:center}.global-rani-surprise-section{padding-top:46px;padding-bottom:58px}}
+@media(max-width:640px){.global-rani-surprise-section{padding:36px 12px 46px}.global-rani-surprise-heading{margin-bottom:20px}.global-rani-surprise-heading h2{font-size:clamp(27px,9vw,40px)}.global-rani-surprise-grid{grid-template-columns:1fr;gap:16px;max-width:430px}.global-rani-surprise-card,.global-rani-surprise-card:last-child{grid-column:auto;width:100%;max-width:none;border-radius:22px}.global-rani-surprise-card img{aspect-ratio:4/5}.global-rani-surprise-card .surprise-label{bottom:12px;font-size:14px;padding:8px 15px}}
+@media(max-width:380px){.global-rani-surprise-section{padding-left:8px;padding-right:8px}.global-rani-surprise-grid{gap:12px}.global-rani-surprise-card{border-radius:18px}}
+@media(hover:none){.global-rani-surprise-card:hover .surprise-default{opacity:1;transform:none;filter:none}.global-rani-surprise-card:hover .surprise-hover{opacity:0;animation:none}.global-rani-surprise-card:hover .surprise-label{background:rgba(255,255,255,.94);color:#8e1531}.global-rani-surprise-card.is-active .surprise-default{opacity:0;transform:scale(.985);filter:blur(1px)}.global-rani-surprise-card.is-active .surprise-hover{opacity:1;animation:globalRaniBasketJiggle .62s ease-in-out infinite alternate}.global-rani-surprise-card.is-active .surprise-label{background:#8e1531;color:#fff}}
+@media(prefers-reduced-motion:reduce){.global-rani-surprise-card img{transition:none}.global-rani-surprise-card:hover .surprise-hover,.global-rani-surprise-card.is-active .surprise-hover{animation:none;transform:none}}
 </style>
-</head>
+<style data-universal-logout-style="">.profile-dropdown .global-profile-logout{display:block;width:100%;position:relative;z-index:2;padding:11px 14px;border:0;border-radius:14px;background:transparent;color:var(--ruby,#9e1533);font:inherit;font-size:14px;font-weight:900;white-space:nowrap;text-align:center;cursor:pointer}.profile-dropdown .global-profile-logout:hover{background:linear-gradient(135deg,rgba(158,21,51,.10),rgba(185,133,47,.16));color:var(--ruby,#9e1533)}.profile-dropdown .global-profile-logout[hidden]{display:none!important}.profile-dropdown .global-profile-logout:disabled{opacity:.65;cursor:wait}</style></head>
 <body class="home-page">
 <div class="petal-layer" id="petalLayer"></div>
 <div class="cursor-flowers" id="cursorFlowers"></div>
@@ -4627,7 +4631,7 @@
 <option value="QA|QAR|Qatar|ر.ق">🇶🇦 Qatar — QAR</option>
 </select>
 </div>
-<div class="profile-menu-wrap"><button aria-expanded="false" aria-haspopup="true" aria-label="Open member profile sign up and login" class="profile-icon-link profile-trigger bloom-hover" title="Sign up or log in" type="button"><span class="profile-caret-badge">⌄</span></button><div class="profile-dropdown" data-profile-dropdown="" role="menu"><a href="account.html" role="menuitem">Member Profile</a><a href="account.html?action=login" role="menuitem">Log in</a><button class="profile-dropdown-logout global-profile-logout" hidden="" role="menuitem" type="button">Log Out</button></div></div>
+<div class="profile-menu-wrap"><button aria-expanded="false" aria-haspopup="true" aria-label="Open member profile sign up and login" class="profile-icon-link profile-trigger bloom-hover" title="Sign up or log in" type="button"><span class="profile-caret-badge">⌄</span></button><div class="profile-dropdown" data-profile-dropdown="" role="menu"><a data-universal-member-link="" href="account.html" role="menuitem">Member Profile</a><a data-universal-login-link="" href="account.html?action=login" role="menuitem">Log in</a><button class="profile-dropdown-logout global-profile-logout" hidden="" role="menuitem" type="button">Log Out</button></div></div>
 <button aria-label="Open shopping bag" class="cart-btn cart-icon-btn bloom-hover" onclick="toggleCart()"><span aria-hidden="true" class="bag-icon"><svg focusable="false" role="img" viewbox="0 0 24 24"><path class="bag-body" d="M6.2 8.2h11.6l1.1 12.1H5.1L6.2 8.2Z"></path><path class="bag-handle" d="M8.8 9V6.9a3.2 3.2 0 0 1 6.4 0V9"></path><path class="bag-sparkle" d="M17.2 3.4l.45 1.15 1.15.45-1.15.45-.45 1.15-.45-1.15-1.15-.45 1.15-.45.45-1.15Z"></path></svg></span><span class="cart-count-badge" id="cartCount">0</span></button><div class="hamburger-menu-wrap"><button aria-expanded="false" aria-haspopup="true" aria-label="Open site menu" class="hamburger-toggle bloom-hover" type="button"><span></span><span></span><span></span></button><div class="hamburger-dropdown" role="menu"><span class="hamburger-menu-label">Menu</span><a href="#categories" role="menuitem">Shop by Collection</a><a href="#shop" role="menuitem">Royal Drops</a><a href="#ugc" role="menuitem">Videos</a><a href="#happy-customers" role="menuitem">Happy Customers</a></div></div>
 </div>
 </nav>
@@ -4636,8 +4640,7 @@
 <div class="eyebrow">Indian jewelry • global glow</div>
 <h1>For every Rani, everywhere.</h1>
 <div class="hero-actions">
-
-<a class="cta ghost bloom-hover" href="#ugc" style="text-decoration:none;">Watch Video</a>
+<a class="cta ghost bloom-hover" href="#ugc" style="text-decoration:none;">Watch Videos</a>
 </div>
 </div>
 <div class="hero-card">
@@ -4645,29 +4648,6 @@
 <div class="logo-orb"><img alt="The Global Rani luxury jewelry logo" src="https://ik.imagekit.io/k0wpvuatq/global-rani-logo.png"/></div>
 </div>
 </header>
-
-<section class="global-rani-surprise-section" id="rani-surprise">
-  <div class="global-rani-surprise-heading">
-    <h2>What’s in Her Basket?</h2>
-  </div>
-  <div class="global-rani-surprise-grid">
-    <a class="global-rani-surprise-card" href="categories/jewelry-sets.html" aria-label="Shop Bridal jewelry sets">
-      <img class="surprise-default" src="assets/global-rani-hover/bridal-default.jpg" alt="Bridal Rani holding an empty basket" loading="lazy" decoding="async">
-      <img class="surprise-hover" src="assets/global-rani-hover/festive-hover.jpg" alt="Surprised Bridal Rani with jewelry rising from her basket" loading="lazy" decoding="async">
-      <span class="surprise-label">Bridal</span>
-    </a>
-    <a class="global-rani-surprise-card" href="categories/jewelry-sets.html" aria-label="Shop Festive jewelry sets">
-      <img class="surprise-default" src="assets/global-rani-hover/festive-default.jpg" alt="Festive Rani holding an empty basket" loading="lazy" decoding="async">
-      <img class="surprise-hover" src="assets/global-rani-hover/bridal-hover.jpg" alt="Surprised Festive Rani with jewelry rising from her basket" loading="lazy" decoding="async">
-      <span class="surprise-label">Festive</span>
-    </a>
-    <a class="global-rani-surprise-card" href="categories/jewelry-sets.html" aria-label="Shop Everyday jewelry sets">
-      <img class="surprise-default" src="assets/global-rani-hover/everyday-default.jpg" alt="Everyday Rani holding an empty basket" loading="lazy" decoding="async">
-      <img class="surprise-hover" src="assets/global-rani-hover/everyday-hover.jpg" alt="Surprised Everyday Rani with jewelry rising from her basket" loading="lazy" decoding="async">
-      <span class="surprise-label">Everyday</span>
-    </a>
-  </div>
-</section>
 <div class="marquee">
 <div class="marquee-track">
 <div aria-hidden="false" class="marquee-group">
@@ -4684,6 +4664,25 @@
 </div>
 </div>
 </div>
+<section class="global-rani-surprise-section" id="rani-surprise">
+<div class="global-rani-surprise-grid">
+<a aria-label="Shop Bridal jewelry sets" class="global-rani-surprise-card" href="categories/jewelry-sets.html">
+<img alt="Bridal Rani holding an empty basket" class="surprise-default" decoding="async" loading="lazy" src="assets/global-rani-hover/bridal-default.jpg"/>
+<img alt="Surprised Bridal Rani with jewelry rising from her basket" class="surprise-hover" decoding="async" loading="lazy" src="assets/global-rani-hover/festive-hover.jpg"/>
+<span class="surprise-label">Bridal</span>
+</a>
+<a aria-label="Shop Festive jewelry sets" class="global-rani-surprise-card" href="categories/jewelry-sets.html">
+<img alt="Festive Rani holding an empty basket" class="surprise-default" decoding="async" loading="lazy" src="assets/global-rani-hover/festive-default.jpg"/>
+<img alt="Surprised Festive Rani with jewelry rising from her basket" class="surprise-hover" decoding="async" loading="lazy" src="assets/global-rani-hover/bridal-hover.jpg"/>
+<span class="surprise-label">Festive</span>
+</a>
+<a aria-label="Shop Everyday jewelry sets" class="global-rani-surprise-card" href="categories/jewelry-sets.html">
+<img alt="Everyday Rani holding an empty basket" class="surprise-default" decoding="async" loading="lazy" src="assets/global-rani-hover/everyday-default.jpg"/>
+<img alt="Surprised Everyday Rani with jewelry rising from her basket" class="surprise-hover" decoding="async" loading="lazy" src="assets/global-rani-hover/everyday-hover.jpg"/>
+<span class="surprise-label">Everyday</span>
+</a>
+</div>
+</section>
 <section class="category-section" id="categories">
 <div aria-hidden="true" class="collection-rose-stage"></div>
 <div class="section-title">
@@ -4692,24 +4691,24 @@
 <div class="category-grid">
 <a aria-label="Open Earrings collection page" class="category-card frame-rect bloom-hover has-hero" href="categories/earrings.html">
 <div class="category-frame">
-<img alt="Earrings from The Global Rani inventory" class="category-photo" decoding="async" id="earringsCollectionFramePhoto" loading="lazy" src="https://ik.imagekit.io/k0wpvuatq/category-earrings.jpg"/>
-<img alt="" aria-hidden="true" class="category-frame-art" decoding="async" loading="lazy" src="https://ik.imagekit.io/k0wpvuatq/category-frame-02.png"/>
+<img alt="Earrings from The Global Rani inventory" class="category-photo" decoding="async" id="earringsCollectionFramePhoto" loading="lazy" src="https://ik.imagekit.io/k0wpvuatq/category-earrings.jpg">
+<img alt="" aria-hidden="true" class="category-frame-art" decoding="async" loading="lazy" src="https://ik.imagekit.io/k0wpvuatq/category-frame-02.png">
 <span class="category-title">Earrings</span>
-</div>
+</img></img></div>
 </a>
 <a aria-label="Open Bangles/kadas collection page" class="category-card frame-round bloom-hover has-hero" href="categories/bangles-kadas.html">
 <div class="category-frame">
-<img alt="Bangles and kadas from The Global Rani inventory" class="category-photo" decoding="async" id="banglesCollectionFramePhoto" loading="lazy" src="https://ik.imagekit.io/k0wpvuatq/category-bangles-kadas.jpg"/>
-<img alt="" aria-hidden="true" class="category-frame-art" decoding="async" loading="lazy" src="https://ik.imagekit.io/k0wpvuatq/category-frame-03.png"/>
+<img alt="Bangles and kadas from The Global Rani inventory" class="category-photo" decoding="async" id="banglesCollectionFramePhoto" loading="lazy" src="https://ik.imagekit.io/k0wpvuatq/category-bangles-kadas.jpg">
+<img alt="" aria-hidden="true" class="category-frame-art" decoding="async" loading="lazy" src="https://ik.imagekit.io/k0wpvuatq/category-frame-03.png">
 <span class="category-title">Bangles / Kadas</span>
-</div>
+</img></img></div>
 </a>
 <a aria-label="Open Jewelry Sets collection page" class="category-card frame-rect featured-category has-hero bloom-hover" href="categories/jewelry-sets.html">
 <div class="category-frame">
-<img alt="Jewelry Sets collection" class="category-photo" decoding="async" loading="lazy" src="https://ik.imagekit.io/k0wpvuatq/maharani-manika-topaz-set-1.png"/>
-<img alt="" aria-hidden="true" class="category-frame-art" decoding="async" loading="lazy" src="https://ik.imagekit.io/k0wpvuatq/category-frame-07.png"/>
+<img alt="Jewelry Sets collection" class="category-photo" decoding="async" loading="lazy" src="https://ik.imagekit.io/k0wpvuatq/maharani-manika-topaz-set-1.png">
+<img alt="" aria-hidden="true" class="category-frame-art" decoding="async" loading="lazy" src="https://ik.imagekit.io/k0wpvuatq/category-frame-07.png">
 <span class="category-title">Jewelry Sets</span>
-</div>
+</img></img></div>
 </a>
 </div>
 </section>
@@ -4904,7 +4903,6 @@
 <span>The Global Rani</span>
 </a>
 </div>
-
 </div>
 <div class="footer-bottom">
 <div class="footer-bottom-inner">
@@ -6027,35 +6025,7 @@
     });
   })();
 </script>
-<script>
-  (function(){
-    function getLoggedInMember(){
-      try { return JSON.parse(sessionStorage.getItem('globalRaniLoggedInMember') || 'null'); } catch(e) { return null; }
-    }
-    function updateProfileMenu(member){
-      document.querySelectorAll('[data-profile-dropdown]').forEach(dropdown => {
-        if (member) {
-          dropdown.innerHTML = '<a href="#" class="profile-logout-link" role="menuitem">Log out</a>';
-        } else {
-          dropdown.innerHTML = '<a href="account.html" role="menuitem">Member Profile</a><a href="account.html?action=login" role="menuitem">Log in</a><button class="profile-dropdown-logout global-profile-logout" type="button" role="menuitem" hidden>Log Out</button>';
-        }
-      });
-    }
-    function updateProfileIcon(){
-      const member = getLoggedInMember();
-      document.querySelectorAll('.profile-icon-link').forEach(link => {
-        link.classList.toggle('logged-in', !!member);
-        link.title = member ? `Signed in as ${member.firstName || ''} ${member.lastName || ''}`.trim() : 'Sign up or log in';
-        link.setAttribute('aria-label', member ? `Open profile for ${member.firstName || 'member'}` : 'Open member profile sign up and login');
-      });
-      updateProfileMenu(member);
-    }
-    updateProfileIcon();
-    window.addEventListener('storage', updateProfileIcon);
-    window.addEventListener('globalRaniMemberChanged', updateProfileIcon);
-    window.GlobalRaniMember = { getLoggedInMember, updateProfileIcon, updateProfileMenu };
-  })();
-</script>
+
 <script>
   (function(){
     function closeHamburgerMenus(exceptWrap){
@@ -6124,59 +6094,7 @@
     });
   })();
 </script>
-<script type="module">
-  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
-  import { getAuth, setPersistence, browserSessionPersistence, signOut } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
 
-  const firebaseConfig = {
-    apiKey: ["AI", "zaSyBise9pqTYgQwmG-xOVZQ0-30j1EvcgDng"].join(""),
-    authDomain: "the-global-rani-website.firebaseapp.com",
-    projectId: "the-global-rani-website",
-    storageBucket: "the-global-rani-website.firebasestorage.app",
-    messagingSenderId: "603989663669",
-    appId: "1:603989663669:web:24c32f6c1bce81a20803fc"
-  };
-
-  const app = initializeApp(firebaseConfig);
-  const auth = getAuth(app);
-  await setPersistence(auth, browserSessionPersistence);
-
-  function clearGlobalRaniMemberSession() {
-    const customerKeys = [
-      "globalRaniLoggedInMember",
-      "globalRaniCheckoutMode",
-      "globalRaniRequireShippingVerification",
-      "globalRaniReturnToCheckoutAfterVerify",
-      "globalRaniCustomerProfile",
-      "globalRaniGuestShippingProfile",
-      "globalRaniGuestShippingDraft",
-      "globalRaniShippingProfiles",
-      "globalRaniScrollToCheckout",
-      "globalRaniSelectedTryOn"
-    ];
-    customerKeys.forEach((key) => {
-      sessionStorage.removeItem(key);
-      localStorage.removeItem(key);
-    });
-    if (window.GlobalRaniMember && typeof window.GlobalRaniMember.updateProfileIcon === "function") {
-      window.GlobalRaniMember.updateProfileIcon();
-    }
-    window.dispatchEvent(new Event("globalRaniMemberChanged"));
-  }
-
-  document.addEventListener("click", async (event) => {
-    const logoutLink = event.target.closest(".profile-logout-link");
-    if (!logoutLink) return;
-    event.preventDefault();
-    clearGlobalRaniMemberSession();
-    try {
-      await signOut(auth);
-    } catch (error) {
-      console.warn("Firebase logout issue:", error);
-    }
-    window.location.replace("index.html");
-  });
-</script>
 <div aria-hidden="true" class="video-viewer-overlay" id="videoViewerOverlay">
 <div aria-labelledby="videoViewerTitle" aria-modal="true" class="video-viewer-modal" role="dialog">
 <div class="video-viewer-top">
@@ -6184,7 +6102,7 @@
 <button aria-label="Close video viewer" class="video-viewer-close" type="button">×</button>
 </div>
 <div class="video-viewer-frame">
-<video controls="" id="videoViewerPlayer" playsinline="" preload="metadata"></video>
+<video autoplay="" controls="" id="videoViewerPlayer" playsinline="" preload="auto"></video>
 </div>
 </div>
 </div>
@@ -6194,50 +6112,90 @@
     const player = document.getElementById('videoViewerPlayer');
     const title = document.getElementById('videoViewerTitle');
     if (!overlay || !player || !title) return;
+
     const closeBtn = overlay.querySelector('.video-viewer-close');
     let lastTrigger = null;
+    let clickedPreview = null;
 
-    function pauseWheelPreviews(){
-      document.querySelectorAll('.video-cabin-inner video, .collection-video-card video').forEach(video => {
+    const previews = () => document.querySelectorAll('.video-cabin-inner video, .collection-video-card video');
+
+    function pauseOtherPreviews(exceptVideo){
+      previews().forEach(video => {
+        if (video === exceptVideo) return;
         try { video.pause(); } catch(e) {}
       });
     }
-    function resumeWheelPreviews(){
-      document.querySelectorAll('.video-cabin-inner video, .collection-video-card video').forEach(video => {
-        // Preserve a customer's sound choice. Muting is only the autoplay fallback.
-        const playAttempt = video.play();
-        if (playAttempt && typeof playAttempt.catch === 'function') {
-          playAttempt.catch(() => {
-            video.muted = true;
-            video.play().catch(() => {});
-          });
-        }
+
+    function resumeMutedPreviews(){
+      previews().forEach(video => {
+        video.muted = true;
+        video.defaultMuted = true;
+        const attempt = video.play();
+        if (attempt && typeof attempt.catch === 'function') attempt.catch(() => {});
       });
     }
-    function openViewer(trigger){
-      const src = trigger.getAttribute('data-video-src');
-      if (!src) return;
-      lastTrigger = trigger;
-      title.textContent = trigger.getAttribute('data-video-title') || 'The Global Rani Reel';
-      pauseWheelPreviews();
-      if (window.GlobalRaniMusicControls) window.GlobalRaniMusicControls.pauseForVideo();
+
+    function startModalWithSound(src){
+      player.pause();
+      player.removeAttribute('src');
+      player.load();
       player.src = src;
-      player.currentTime = 0;
+      player.autoplay = true;
+      player.controls = true;
+      player.playsInline = true;
       player.defaultMuted = false;
       player.muted = false;
       player.volume = 1;
+
+      // This call runs directly inside the customer's click/tap, which allows audio.
+      const attempt = player.play();
+      if (attempt && typeof attempt.catch === 'function') {
+        attempt.catch(() => {
+          player.addEventListener('canplay', function retryWithSound(){
+            player.defaultMuted = false;
+            player.muted = false;
+            player.volume = 1;
+            player.play().catch(() => {});
+          }, { once:true });
+        });
+      }
+    }
+
+    function openViewer(trigger){
+      const src = trigger.getAttribute('data-video-src');
+      if (!src) return;
+
+      lastTrigger = trigger;
+      clickedPreview = trigger.querySelector('video');
+      title.textContent = trigger.getAttribute('data-video-title') || 'The Global Rani Reel';
+
+      // Immediately unmute the exact video the customer clicked. This guarantees
+      // that every Ferris-wheel and strip video can play audio from a user gesture.
+      if (clickedPreview) {
+        clickedPreview.defaultMuted = false;
+        clickedPreview.muted = false;
+        clickedPreview.volume = 1;
+        const previewAttempt = clickedPreview.play();
+        if (previewAttempt && typeof previewAttempt.catch === 'function') previewAttempt.catch(() => {});
+      }
+      pauseOtherPreviews(clickedPreview);
+
+      if (window.GlobalRaniMusicControls) window.GlobalRaniMusicControls.pauseForVideo();
       overlay.classList.add('open');
       overlay.setAttribute('aria-hidden', 'false');
       document.body.style.overflow = 'hidden';
-      setTimeout(() => {
-        closeBtn.focus();
-        player.muted = false;
-        player.volume = 1;
-        player.play().catch(() => {
-          // Some browsers still require a direct media gesture; controls remain available.
-        });
-      }, 80);
+
+      startModalWithSound(src);
+
+      player.addEventListener('playing', function stopPreviewAfterModalStarts(){
+        if (clickedPreview) {
+          clickedPreview.pause();
+          clickedPreview.muted = true;
+          clickedPreview.defaultMuted = true;
+        }
+      }, { once:true });
     }
+
     function closeViewer(){
       overlay.classList.remove('open');
       overlay.setAttribute('aria-hidden', 'true');
@@ -6245,20 +6203,23 @@
       player.removeAttribute('src');
       player.load();
       document.body.style.overflow = '';
-      resumeWheelPreviews();
+      resumeMutedPreviews();
       if (window.GlobalRaniMusicControls) window.GlobalRaniMusicControls.resumeAfterVideo();
-      if (lastTrigger) lastTrigger.focus();
+      if (lastTrigger) lastTrigger.focus({ preventScroll:true });
+      clickedPreview = null;
     }
 
     document.addEventListener('click', function(event){
       const trigger = event.target.closest('.video-cabin-inner.has-video[data-video-src], .collection-video-card.has-video[data-video-src]');
       if (trigger) {
         event.preventDefault();
+        event.stopPropagation();
         openViewer(trigger);
         return;
       }
       if (event.target === overlay) closeViewer();
     });
+
     document.addEventListener('keydown', function(event){
       const trigger = event.target.closest && event.target.closest('.video-cabin-inner.has-video[data-video-src], .collection-video-card.has-video[data-video-src]');
       if (trigger && (event.key === 'Enter' || event.key === ' ')) {
@@ -6268,17 +6229,8 @@
       }
       if (event.key === 'Escape' && overlay.classList.contains('open')) closeViewer();
     });
-    closeBtn.addEventListener('click', closeViewer);
 
-    const ferrisCard = document.querySelector('.ferris-video-card');
-    if (ferrisCard) {
-      ferrisCard.addEventListener('mouseenter', function(){
-        if (!overlay.classList.contains('open')) pauseWheelPreviews();
-      });
-      ferrisCard.addEventListener('mouseleave', function(){
-        if (!overlay.classList.contains('open')) resumeWheelPreviews();
-      });
-    }
+    closeBtn.addEventListener('click', closeViewer);
   })();
 </script>
 <div aria-live="polite" class="global-rani-chat" id="globalRaniChat">
@@ -6521,8 +6473,6 @@
     renderCategoryCarousel();
   })();
 </script>
-
-
 <script>
 (function () {
   const DEFAULT_TTL = 30 * 60 * 1000;
@@ -6836,92 +6786,31 @@
       else start();
     })();
   </script>
-<script data-global-profile-auth="" type="module">
-  import { initializeApp, getApps, getApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
-  import { getAuth, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
-
-  const firebaseConfig = {
-    apiKey: ["AI", "zaSyBise9pqTYgQwmG-xOVZQ0-30j1EvcgDng"].join(""),
-    authDomain: "the-global-rani-website.firebaseapp.com",
-    projectId: "the-global-rani-website",
-    storageBucket: "the-global-rani-website.firebasestorage.app",
-    messagingSenderId: "603989663669",
-    appId: "1:603989663669:web:24c32f6c1bce81a20803fc"
-  };
-
-  const app = getApps().length ? getApp() : initializeApp(firebaseConfig);
-  const auth = getAuth(app);
-
-  function updateCombinedProfileMenu(user) {
-    document.querySelectorAll('.profile-menu-wrap').forEach((wrap) => {
-      const trigger = wrap.querySelector('.profile-trigger, .profile-icon-link');
-      const links = Array.from(wrap.querySelectorAll('.profile-dropdown a'));
-      const loginLink = links.find((link) => /log\s*in/i.test(link.textContent || '') || /action=login/.test(link.getAttribute('href') || ''));
-      const memberLink = links.find((link) => /member profile/i.test(link.textContent || ''));
-      const logoutButton = wrap.querySelector('.global-profile-logout');
-
-      trigger?.classList.toggle('logged-in', !!user);
-      if (trigger) {
-        const accountBase = location.pathname.includes('/categories/') ? '../account.html' : 'account.html';
-        trigger.title = user ? `Signed in as ${user.email || 'member'}` : 'Sign up or log in';
-        trigger.setAttribute('aria-label', user ? 'Open order summary' : 'Open member profile sign up and login');
-        trigger.dataset.profileSignedIn = user ? 'true' : 'false';
-        trigger.dataset.orderSummaryUrl = `${accountBase}#order-summary`;
-      }
-      if (memberLink) {
-        const accountBase = location.pathname.includes('/categories/') ? '../account.html' : 'account.html';
-        memberLink.hidden = false;
-        memberLink.href = user ? `${accountBase}#order-summary` : accountBase;
-      }
-      if (loginLink) loginLink.hidden = !!user;
-      if (logoutButton) logoutButton.hidden = !user;
-    });
-  }
-
-  onAuthStateChanged(auth, (user) => {
-    if (user) {
-      sessionStorage.setItem('globalRaniLoggedInMember', JSON.stringify({
-        firstName: '', lastName: '', email: user.email || '', uid: user.uid || ''
-      }));
-      sessionStorage.setItem('globalRaniCheckoutMode', 'member');
-    } else {
-      sessionStorage.removeItem('globalRaniLoggedInMember');
-    }
-    updateCombinedProfileMenu(user);
-  });
-
-  document.addEventListener('click', async (event) => {
-    const logoutButton = event.target.closest('.global-profile-logout');
-    if (!logoutButton) return;
-    logoutButton.disabled = true;
-    try {
-      const savedCart = sessionStorage.getItem('globalRaniCart');
-      await signOut(auth);
-      sessionStorage.clear();
-      if (savedCart !== null) sessionStorage.setItem('globalRaniCart', savedCart);
-      localStorage.removeItem('globalRaniLoggedInMember');
-      localStorage.removeItem('globalRaniCustomerProfile');
-      window.location.replace(location.pathname.includes('/categories/') ? '../index.html' : 'index.html');
-    } catch (error) {
-      console.error('Logout failed:', error);
-      logoutButton.disabled = false;
-      alert('Logout failed. Please try again.');
-    }
-  });
-</script>
 
 <script id="global-rani-hover-surprise-script">
 (function(){
   const cards=document.querySelectorAll('.global-rani-surprise-card');
+  const touchMode=window.matchMedia('(hover: none)').matches;
   cards.forEach(card=>{
-    card.addEventListener('click',()=>{
-      if(window.matchMedia('(hover: none)').matches){card.classList.toggle('is-active');}
+    card.addEventListener('click',(event)=>{
+      if(!touchMode) return;
+      if(!card.classList.contains('is-active')){
+        event.preventDefault();
+        cards.forEach(other=>{if(other!==card) other.classList.remove('is-active');});
+        card.classList.add('is-active');
+      }
+      // On touchscreens, the first tap reveals the surprise and the second tap opens Jewelry Sets.
     });
-    card.addEventListener('mouseleave',()=>card.classList.remove('is-active'));
+    card.addEventListener('mouseleave',()=>{if(!touchMode) card.classList.remove('is-active');});
+  });
+  document.addEventListener('click',(event)=>{
+    if(touchMode && !event.target.closest('.global-rani-surprise-card')){
+      cards.forEach(card=>card.classList.remove('is-active'));
+    }
   });
 })();
 </script>
-</body>
+<script data-universal-profile-auth="" src="universal-profile-auth.js" type="module"></script></body>
 </html>
 <style>
 /* Final responsive mobile Shop by Collection sizing.
