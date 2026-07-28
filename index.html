@@ -4601,7 +4601,14 @@
 @media(hover:none){.global-rani-surprise-card:hover .surprise-default{opacity:1;transform:none;filter:none}.global-rani-surprise-card:hover .surprise-hover{opacity:0;animation:none}.global-rani-surprise-card:hover .surprise-label{background:rgba(255,255,255,.94);color:#8e1531}.global-rani-surprise-card.is-active .surprise-default{opacity:0;transform:scale(.985);filter:blur(1px)}.global-rani-surprise-card.is-active .surprise-hover{opacity:1;animation:globalRaniBasketJiggle .62s ease-in-out infinite alternate}.global-rani-surprise-card.is-active .surprise-label{background:#8e1531;color:#fff}}
 @media(prefers-reduced-motion:reduce){.global-rani-surprise-card img{transition:none}.global-rani-surprise-card:hover .surprise-hover,.global-rani-surprise-card.is-active .surprise-hover{animation:none;transform:none}}
 </style>
-<style data-universal-logout-style="">.profile-dropdown .global-profile-logout{display:block;width:100%;position:relative;z-index:2;padding:11px 14px;border:0;border-radius:14px;background:transparent;color:var(--ruby,#9e1533);font:inherit;font-size:14px;font-weight:900;white-space:nowrap;text-align:center;cursor:pointer}.profile-dropdown .global-profile-logout:hover{background:linear-gradient(135deg,rgba(158,21,51,.10),rgba(185,133,47,.16));color:var(--ruby,#9e1533)}.profile-dropdown .global-profile-logout[hidden]{display:none!important}.profile-dropdown .global-profile-logout:disabled{opacity:.65;cursor:wait}</style></head>
+<style data-universal-logout-style="">.profile-dropdown .global-profile-logout{display:block;width:100%;position:relative;z-index:2;padding:11px 14px;border:0;border-radius:14px;background:transparent;color:var(--ruby,#9e1533);font:inherit;font-size:14px;font-weight:900;white-space:nowrap;text-align:center;cursor:pointer}.profile-dropdown .global-profile-logout:hover{background:linear-gradient(135deg,rgba(158,21,51,.10),rgba(185,133,47,.16));color:var(--ruby,#9e1533)}.profile-dropdown .global-profile-logout[hidden]{display:none!important}.profile-dropdown .global-profile-logout:disabled{opacity:.65;cursor:wait}</style>
+<style data-profile-auth-menu-state>
+.profile-dropdown[data-auth-menu-state="signed-in"] [data-universal-member-link],
+.profile-dropdown[data-auth-menu-state="signed-in"] [data-universal-login-link] { display: none !important; }
+.profile-dropdown[data-auth-menu-state="signed-in"] .global-profile-logout { display: block !important; width: 100%; }
+.profile-dropdown[data-auth-menu-state="signed-out"] .global-profile-logout { display: none !important; }
+</style>
+</head>
 <body class="home-page">
 <div class="petal-layer" id="petalLayer"></div>
 <div class="cursor-flowers" id="cursorFlowers"></div>

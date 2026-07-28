@@ -65,12 +65,23 @@ function updateProfileMenus(user) {
       dropdown.append(logoutButton);
     }
 
-    memberLink.href = user ? `${accountBase}#order-summary` : accountBase;
+    memberLink.href = accountBase;
     loginLink.href = `${accountBase}?action=login`;
+
+    // Signed-out customers can access the member/sign-in options. Once Firebase
+    // confirms a completed sign-in or sign-up, the combined profile dropdown
+    // contains one option only: the universal Log Out button.
+    memberLink.hidden = !!user;
     loginLink.hidden = !!user;
+    memberLink.style.display = user ? 'none' : '';
+    loginLink.style.display = user ? 'none' : '';
+
     logoutButton.hidden = !user;
+    logoutButton.style.display = user ? 'block' : 'none';
     logoutButton.disabled = false;
     logoutButton.textContent = 'Log Out';
+
+    dropdown.dataset.authMenuState = user ? 'signed-in' : 'signed-out';
 
     if (trigger) {
       trigger.classList.toggle('logged-in', !!user);
