@@ -6410,29 +6410,31 @@
       const searchable = `${product.name} ${product.description}`.toLowerCase();
       return details.terms.reduce((score, term) => score + (searchable.includes(term) ? 1 : 0), 0);
     }
-    async function nextAvailableProduct(occasion){
+    async function nextAvailableProducts(occasion, count = 3){
       const catalog = await loadCatalog();
       const history = readRecommendationHistory();
-      const lastId = history[history.length - 1] || '';
+      const previousGroup = new Set(history.slice(-count));
       const alreadyShown = new Set(history);
-      const eligible = catalog.filter(product => !unavailableProductIds.has(product.id) && product.id !== lastId);
-      let candidates = eligible.filter(product => !alreadyShown.has(product.id));
+      const eligible = catalog.filter(product => !unavailableProductIds.has(product.id));
+      const rank = items => shuffled(items).sort((a, b) => occasionScore(b, occasion) - occasionScore(a, occasion));
+      const candidates = [
+        ...rank(eligible.filter(product => !alreadyShown.has(product.id) && !previousGroup.has(product.id))),
+        ...rank(eligible.filter(product => alreadyShown.has(product.id) && !previousGroup.has(product.id))),
+        ...rank(eligible.filter(product => previousGroup.has(product.id)))
+      ];
+      const selected = [];
 
-      // Begin a fresh rotation only after every other image-ready set has been shown.
-      if (!candidates.length) candidates = eligible;
-
-      candidates = shuffled(candidates).sort((a, b) => occasionScore(b, occasion) - occasionScore(a, occasion));
       for (const product of candidates) {
+        if (selected.some(item => item.id === product.id)) continue;
         if (await imageIsAvailable(product.image)) {
-          const nextHistory = alreadyShown.has(product.id) && !eligible.some(item => !alreadyShown.has(item.id))
-            ? [lastId, product.id].filter(Boolean)
-            : [...history, product.id];
-          saveRecommendationHistory(nextHistory);
-          return product;
+          selected.push(product);
+          if (selected.length === count) break;
+          continue;
         }
         unavailableProductIds.add(product.id);
       }
-      return null;
+      if (selected.length) saveRecommendationHistory([...history, ...selected.map(product => product.id)]);
+      return selected;
     }
 
     function addMessage(text, who){
@@ -6511,19 +6513,18 @@
       const details = occasionDetails[occasion] || occasionDetails.party;
       if (announceChoice) addMessage(`I’m shopping for ${details.label}.`, 'user');
       options.innerHTML = '';
-      addMessage('Let me check the jewelry sets that have a photo available right now…', 'bot');
       try {
-        const product = await nextAvailableProduct(occasion);
-        if (!product) {
-          addMessage('I could not find another jewelry set with a working image right now. Please try again after more set photos are added.', 'bot');
+        const products = await nextAvailableProducts(occasion, 3);
+        if (!products.length) {
+          addMessage('I could not find jewelry sets with working images right now. Please try again after more set photos are added.', 'bot');
           setOptions([
             { label:'Try again', action:()=>recommend(occasion, false) },
             { label:'Start over', action:()=>showMainOptions() }
           ]);
           return;
         }
-        addMessage(`Beautiful choice 👑 My next image-ready recommendation for ${details.label} is:`, 'bot');
-        addProductCard(product, occasion);
+        addMessage(`👑 My recommendation for ${details.label} is:`, 'bot');
+        products.forEach(product => addProductCard(product, occasion));
         setOptions([
           { label:'Recommend another', action:()=>recommend(occasion, false) },
           { label:'Start over', action:()=>{ addMessage('Let’s find another look.', 'user'); showMainOptions(); } },
