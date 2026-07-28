@@ -316,6 +316,19 @@
 .profile-dropdown[data-auth-menu-state="signed-in"] .global-profile-logout { display: block !important; width: 100%; }
 .profile-dropdown[data-auth-menu-state="signed-out"] .global-profile-logout { display: none !important; }
 </style>
+
+<style data-universal-profile-arrow-fix>
+.profile-menu-wrap{position:relative!important}
+.profile-trigger{cursor:pointer!important}
+.profile-caret-badge{pointer-events:auto!important;cursor:pointer!important;z-index:5!important}
+.profile-menu-wrap.open .profile-dropdown{display:block!important;visibility:visible!important;opacity:1!important}
+.profile-dropdown[data-auth-menu-state="signed-in"] .global-profile-logout{display:block!important}
+</style>
+
+<style data-logout-only-menu-fix>
+.profile-dropdown[data-auth-menu-state="signed-in"] > :not(.global-profile-logout){display:none!important}
+.profile-dropdown[data-auth-menu-state="signed-in"] .global-profile-logout{display:block!important;width:100%!important}
+</style>
 </head>
 <body>
 <div class="top-banner">We Ship Globally</div>

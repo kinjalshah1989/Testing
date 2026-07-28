@@ -390,6 +390,11 @@
 .profile-dropdown[data-auth-menu-state="signed-in"] .global-profile-logout { display: block !important; width: 100%; }
 .profile-dropdown[data-auth-menu-state="signed-out"] .global-profile-logout { display: none !important; }
 </style>
+
+<style data-logout-only-menu-fix>
+.profile-dropdown[data-auth-menu-state="signed-in"] > :not(.global-profile-logout){display:none!important}
+.profile-dropdown[data-auth-menu-state="signed-in"] .global-profile-logout{display:block!important;width:100%!important}
+</style>
 </head>
 <body>
 <div class="app">
