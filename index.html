@@ -4593,6 +4593,10 @@
 <style>
 .profile-dropdown .global-profile-logout{display:block;width:100%;position:relative;z-index:1;padding:11px 14px;border:0;border-radius:14px;background:transparent;color:var(--ruby,#9e1533);font:inherit;font-size:14px;font-weight:900;white-space:nowrap;text-align:center;cursor:pointer}.profile-dropdown .global-profile-logout:hover{background:linear-gradient(135deg,rgba(158,21,51,.10),rgba(185,133,47,.16));color:var(--ruby,#9e1533)}.profile-dropdown .global-profile-logout[hidden]{display:none!important}
 </style>
+
+<style id="global-rani-hover-surprise-styles">
+.global-rani-surprise-section{max-width:1380px;margin:0 auto;padding:58px 22px 70px;position:relative;overflow:hidden}.global-rani-surprise-heading{text-align:center;margin-bottom:30px}.global-rani-surprise-heading .eyebrow{font-size:12px;letter-spacing:.2em;text-transform:uppercase;color:#9e1533;font-weight:800}.global-rani-surprise-heading h2{font-family:'Cinzel',serif;color:var(--gold,#b9852f);font-size:clamp(32px,5vw,62px);margin:8px 0 12px}.global-rani-surprise-heading p{max-width:760px;margin:0 auto;line-height:1.7;color:#604c52}.global-rani-surprise-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:24px}.global-rani-surprise-card{position:relative;display:block;text-decoration:none;width:100%;padding:0;border:0;border-radius:30px;background:#f7eee7;overflow:hidden;cursor:pointer;box-shadow:0 22px 50px rgba(91,50,62,.14);isolation:isolate}.global-rani-surprise-card img{display:block;width:100%;height:auto;transition:opacity .28s ease,transform .35s ease,filter .35s ease}.global-rani-surprise-card .surprise-hover{position:absolute;inset:0;opacity:0;transform:translateY(18px) scale(.96)}.global-rani-surprise-card .surprise-label{position:absolute;left:50%;bottom:18px;z-index:4;transform:translateX(-50%);padding:10px 17px;border-radius:999px;background:rgba(255,255,255,.94);color:#8e1531;font-weight:900;letter-spacing:.06em;box-shadow:0 8px 22px rgba(83,40,53,.16)}.global-rani-surprise-card .surprise-hint{position:absolute;left:50%;top:18px;z-index:4;transform:translateX(-50%);padding:8px 13px;border-radius:999px;background:rgba(126,20,49,.88);color:#fff;font-size:11px;font-weight:800;letter-spacing:.12em;text-transform:uppercase;white-space:nowrap}.global-rani-surprise-card:hover .surprise-default,.global-rani-surprise-card.is-active .surprise-default{opacity:0;transform:scale(.985);filter:blur(1px)}.global-rani-surprise-card:hover .surprise-hover,.global-rani-surprise-card.is-active .surprise-hover{opacity:1;animation:globalRaniBasketJiggle .62s ease-in-out infinite alternate}.global-rani-surprise-card:hover .surprise-label,.global-rani-surprise-card.is-active .surprise-label{background:#8e1531;color:#fff}.global-rani-surprise-card:hover .surprise-hint,.global-rani-surprise-card.is-active .surprise-hint{background:#b9852f}@keyframes globalRaniBasketJiggle{0%{transform:translateY(-7px) rotate(-1.1deg) scale(1.018)}25%{transform:translateY(-13px) rotate(1.4deg) scale(1.035)}50%{transform:translateY(-10px) rotate(-1.5deg) scale(1.04)}75%{transform:translateY(-14px) rotate(1deg) scale(1.032)}100%{transform:translateY(-8px) rotate(-.7deg) scale(1.02)}}@media(max-width:900px){.global-rani-surprise-grid{grid-template-columns:1fr}.global-rani-surprise-section{padding:44px 16px 54px}.global-rani-surprise-card{max-width:520px;margin:0 auto}}@media(prefers-reduced-motion:reduce){.global-rani-surprise-card img{transition:none}.global-rani-surprise-card:hover .surprise-hover,.global-rani-surprise-card.is-active .surprise-hover{animation:none;transform:none}}
+</style>
 </head>
 <body class="home-page">
 <div class="petal-layer" id="petalLayer"></div>
@@ -4641,6 +4645,29 @@
 <div class="logo-orb"><img alt="The Global Rani luxury jewelry logo" src="https://ik.imagekit.io/k0wpvuatq/global-rani-logo.png"/></div>
 </div>
 </header>
+
+<section class="global-rani-surprise-section" id="rani-surprise">
+  <div class="global-rani-surprise-heading">
+    <h2>What’s in Her Basket?</h2>
+  </div>
+  <div class="global-rani-surprise-grid">
+    <a class="global-rani-surprise-card" href="categories/jewelry-sets.html" aria-label="Shop Bridal jewelry sets">
+      <img class="surprise-default" src="assets/global-rani-hover/bridal-default.jpg" alt="Bridal Rani holding an empty basket" loading="lazy" decoding="async">
+      <img class="surprise-hover" src="assets/global-rani-hover/festive-hover.jpg" alt="Surprised Bridal Rani with jewelry rising from her basket" loading="lazy" decoding="async">
+      <span class="surprise-label">Bridal</span>
+    </a>
+    <a class="global-rani-surprise-card" href="categories/jewelry-sets.html" aria-label="Shop Festive jewelry sets">
+      <img class="surprise-default" src="assets/global-rani-hover/festive-default.jpg" alt="Festive Rani holding an empty basket" loading="lazy" decoding="async">
+      <img class="surprise-hover" src="assets/global-rani-hover/bridal-hover.jpg" alt="Surprised Festive Rani with jewelry rising from her basket" loading="lazy" decoding="async">
+      <span class="surprise-label">Festive</span>
+    </a>
+    <a class="global-rani-surprise-card" href="categories/jewelry-sets.html" aria-label="Shop Everyday jewelry sets">
+      <img class="surprise-default" src="assets/global-rani-hover/everyday-default.jpg" alt="Everyday Rani holding an empty basket" loading="lazy" decoding="async">
+      <img class="surprise-hover" src="assets/global-rani-hover/everyday-hover.jpg" alt="Surprised Everyday Rani with jewelry rising from her basket" loading="lazy" decoding="async">
+      <span class="surprise-label">Everyday</span>
+    </a>
+  </div>
+</section>
 <div class="marquee">
 <div class="marquee-track">
 <div aria-hidden="false" class="marquee-group">
@@ -6881,6 +6908,18 @@
       alert('Logout failed. Please try again.');
     }
   });
+</script>
+
+<script id="global-rani-hover-surprise-script">
+(function(){
+  const cards=document.querySelectorAll('.global-rani-surprise-card');
+  cards.forEach(card=>{
+    card.addEventListener('click',()=>{
+      if(window.matchMedia('(hover: none)').matches){card.classList.toggle('is-active');}
+    });
+    card.addEventListener('mouseleave',()=>card.classList.remove('is-active'));
+  });
+})();
 </script>
 </body>
 </html>
