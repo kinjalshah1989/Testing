@@ -829,6 +829,10 @@
       }
       memberOrderList.innerHTML = orders.map(order => {
         const items = Array.isArray(order.items) ? order.items : [];
+        const status = String(order.fulfillmentStatus || order.paymentStatus || "Paid").trim();
+        const statusMarkup = status.toUpperCase() === "NEW"
+          ? ""
+          : `<span class="order-status">${escapeOrderHtml(status)}</span>`;
         const itemMarkup = items.map(item => `
           <div class="order-item">
             ${item.image ? `<img src="${escapeOrderHtml(item.image)}" alt="" loading="lazy" decoding="async">` : '<div></div>'}
@@ -839,7 +843,7 @@
           <article class="order-card">
             <div class="order-card-top">
               <div><p class="order-number">${escapeOrderHtml(order.orderNumber || "Global Rani Order")}</p><p class="order-date">${escapeOrderHtml(formatOrderDate(order.createdAt))}</p></div>
-              <span class="order-status">${escapeOrderHtml(order.fulfillmentStatus || order.paymentStatus || "Paid")}</span>
+              ${statusMarkup}
             </div>
             <div class="order-items">${itemMarkup || '<div class="order-item-name">Order items unavailable</div>'}</div>
             <div class="order-total"><span>Total</span><span>${formatMoney(order.amount, order.currency || "USD")}</span></div>
