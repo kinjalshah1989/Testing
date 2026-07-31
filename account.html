@@ -437,6 +437,7 @@
           </div>
           <div class="current-cart-actions">
             <a class="order-secondary-action" id="orderContinueShopping" href="index.html#shop" hidden>Continue to Shop</a>
+            <button class="order-secondary-action" id="memberGuestCheckoutBtn" type="button" hidden>Checkout as Guest</button>
             <a class="order-primary-action" id="orderPrimaryAction" href="index.html#shop">Continue to Shop</a>
           </div>
         </div>
@@ -614,6 +615,7 @@
         orderPrimaryAction.textContent = 'Continue to Shop';
         orderPrimaryAction.href = 'index.html#shop';
         if (orderContinueShopping) orderContinueShopping.hidden = true;
+        if (memberGuestCheckoutBtn) memberGuestCheckoutBtn.hidden = true;
         return;
       }
 
@@ -629,6 +631,7 @@
       orderPrimaryAction.textContent = 'Continue to Checkout';
       orderPrimaryAction.href = 'shipping.html';
       if (orderContinueShopping) orderContinueShopping.hidden = false;
+      if (memberGuestCheckoutBtn) memberGuestCheckoutBtn.hidden = false;
     }
 
     function checkoutAsGuestFromProfile() {
