@@ -329,49 +329,99 @@ async function queryOrders({ fieldPath, value, projectId, accessToken }) {
     .map((row) => documentToOrder(row.document));
 }
 
+async function listEveryOrder({ projectId, accessToken }) {
+  const orders = [];
+  let pageToken = "";
+
+  do {
+    const query = new URLSearchParams({ pageSize: "300" });
+    if (pageToken) query.set("pageToken", pageToken);
+
+    const url =
+      `https://firestore.googleapis.com/v1/projects/` +
+      `${encodeURIComponent(projectId)}/databases/(default)/documents/orders?${query}`;
+
+    const response = await fetch(url, {
+      headers: {
+        Authorization: `Bearer ${accessToken}`,
+        "Content-Type": "application/json",
+      },
+    });
+
+    if (!response.ok) {
+      const detail = await response.text();
+      throw new Error(
+        `Could not load complete order history (${response.status}): ${detail.slice(0, 180)}`
+      );
+    }
+
+    const body = await response.json();
+    orders.push(...(body.documents || []).map(documentToOrder));
+    pageToken = String(body.nextPageToken || "");
+  } while (pageToken);
+
+  return orders;
+}
+
+function normalizedIdentifier(value) {
+  return String(value || "").trim().toLowerCase();
+}
+
+function orderBelongsToMember(order, { uid, email }) {
+  const memberUid = String(uid || "").trim();
+  const memberEmail = normalizedIdentifier(email);
+
+  const orderUserIds = [
+    order.firebaseUserId,
+    order.firebaseUid,
+    order.userId,
+    order.uid,
+    order.memberId,
+  ].map((value) => String(value || "").trim());
+
+  if (memberUid && orderUserIds.includes(memberUid)) return true;
+
+  const orderEmails = [
+    order.customerEmail,
+    order.payerEmail,
+    order.email,
+    order.customer?.email,
+    order.shipping?.customerEmail,
+    order.shipping?.email,
+  ].map(normalizedIdentifier);
+
+  return Boolean(memberEmail && orderEmails.includes(memberEmail));
+}
+
 async function loadOrders({ uid, email, projectId, idToken }) {
-  let accessToken = idToken;
-  let canMatchPreviousEmailOrders = false;
+  let matchedOrders;
 
   try {
-    accessToken = await getFirestoreAccessToken();
-    canMatchPreviousEmailOrders = true;
+    const accessToken = await getFirestoreAccessToken();
+    const everyOrder = await listEveryOrder({ projectId, accessToken });
+    matchedOrders = everyOrder.filter((order) =>
+      orderBelongsToMember(order, { uid, email })
+    );
   } catch (error) {
-    // Keep the existing signed-in-user lookup working if server credentials
-    // are temporarily unavailable. Email matching requires server access.
+    // Preserve the existing account-ID lookup if the server-side history scan
+    // is temporarily unavailable.
     console.warn("Using member-only order lookup:", error?.message || error);
-  }
-
-  const queries = [
-    queryOrders({
+    matchedOrders = await queryOrders({
       fieldPath: "firebaseUserId",
       value: uid,
       projectId,
-      accessToken,
-    }),
-  ];
-
-  if (canMatchPreviousEmailOrders && email) {
-    queries.push(
-      queryOrders({
-        fieldPath: "customerEmail",
-        value: email,
-        projectId,
-        accessToken,
-      })
-    );
+      accessToken: idToken,
+    });
   }
 
   const ordersById = new Map();
-  for (const orders of await Promise.all(queries)) {
-    for (const order of orders) {
-      const key =
-        order.orderNumber ||
-        order.paypalOrderId ||
-        order.paypalCaptureId ||
-        order._documentName;
-      ordersById.set(key, order);
-    }
+  for (const order of matchedOrders) {
+    const key =
+      order.orderNumber ||
+      order.paypalOrderId ||
+      order.paypalCaptureId ||
+      order._documentName;
+    ordersById.set(key, order);
   }
 
   return [...ordersById.values()]
