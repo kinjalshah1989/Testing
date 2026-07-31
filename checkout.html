@@ -3207,7 +3207,7 @@
                   })
                 });
                 const result = await response.json().catch(() => ({}));
-                if (!response.ok || !result.ok) {
+                if (!response.ok || !result.ok || result.stored !== true) {
                   throw new Error(result.error || 'The paid order could not be recorded.');
                 }
 
