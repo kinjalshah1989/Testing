@@ -251,6 +251,17 @@
       background: rgba(185,133,47,.10);
       font-weight: 700;
     }
+    .checkout-retry-btn {
+      border: 0;
+      border-radius: 999px;
+      padding: 12px 20px;
+      background: linear-gradient(135deg, var(--ruby), var(--gold));
+      color: #fff;
+      font: inherit;
+      font-weight: 900;
+      cursor: pointer;
+      box-shadow: 0 10px 24px rgba(158,21,51,.20);
+    }
     .top-banner {
       width: 100%;
       padding: 8px 16px;
@@ -2280,6 +2291,8 @@
     let cart = [];
     try { localStorage.removeItem('globalRaniCart'); } catch (error) {}
     let paypalClientConfigPromise = null;
+    const paypalSdkPromises = new Map();
+    let paypalRenderRequestId = 0;
 
     async function getPayPalClientConfig() {
       if (!paypalClientConfigPromise) {
@@ -2295,7 +2308,12 @@
             return data;
           });
       }
-      return paypalClientConfigPromise;
+      try {
+        return await paypalClientConfigPromise;
+      } catch (error) {
+        paypalClientConfigPromise = null;
+        throw error;
+      }
     }
     const paypalSupportedCurrencies = new Set(['AUD','BRL','CAD','CNY','CZK','DKK','EUR','HKD','HUF','ILS','JPY','MYR','MXN','TWD','NZD','NOK','PHP','PLN','GBP','SGD','SEK','CHF','THB','USD']);
     const fallbackRates = {
@@ -2951,8 +2969,8 @@
             checkoutNote.textContent = '';
             checkoutNote.hidden = true;
           } else {
-            checkoutNote.textContent = 'Guest shipping details submitted. Payment is ready.';
-            checkoutNote.hidden = false;
+            checkoutNote.textContent = '';
+            checkoutNote.hidden = true;
           }
         } else if (member) {
           checkoutNote.textContent = verificationRequired
@@ -3073,28 +3091,56 @@
       const config = await getPayPalClientConfig();
       const namespace = `paypal_${currencyCode}`;
       if (window[namespace]) return window[namespace];
-      return new Promise((resolve, reject) => {
+
+      if (paypalSdkPromises.has(currencyCode)) {
+        return paypalSdkPromises.get(currencyCode);
+      }
+
+      const sdkPromise = new Promise((resolve, reject) => {
         const existing = document.querySelector(`script[data-paypal-currency="${currencyCode}"]`);
         if (existing) {
           if (window[namespace]) return resolve(window[namespace]);
-          existing.addEventListener('load', () => resolve(window[namespace]), { once: true });
+          existing.addEventListener('load', () => {
+            if (window[namespace]) resolve(window[namespace]);
+            else reject(new Error('The PayPal SDK loaded without creating its checkout namespace.'));
+          }, { once: true });
           existing.addEventListener('error', () => reject(new Error('The live PayPal checkout could not be loaded.')), { once: true });
           return;
         }
+
         const script = document.createElement('script');
         const params = new URLSearchParams({
           'client-id': config.clientId,
           currency: currencyCode,
           intent: 'capture',
-          components: 'buttons'
+          components: 'buttons',
+          'enable-funding': 'card'
         });
         script.src = `https://www.paypal.com/sdk/js?${params.toString()}`;
         script.dataset.namespace = namespace;
         script.dataset.paypalCurrency = currencyCode;
-        script.onload = () => resolve(window[namespace]);
+        const timeout = window.setTimeout(() => {
+          reject(new Error('The live PayPal checkout took too long to load.'));
+        }, 20000);
+        script.onload = () => {
+          window.clearTimeout(timeout);
+          if (window[namespace]) resolve(window[namespace]);
+          else reject(new Error('The PayPal SDK loaded without creating its checkout namespace.'));
+        };
         script.onerror = () => reject(new Error('The live PayPal checkout could not be loaded.'));
         document.head.appendChild(script);
       });
+
+      paypalSdkPromises.set(currencyCode, sdkPromise);
+
+      try {
+        return await sdkPromise;
+      } catch (error) {
+        paypalSdkPromises.delete(currencyCode);
+        const failedScript = document.querySelector(`script[data-paypal-currency="${currencyCode}"]`);
+        if (failedScript && !window[namespace]) failedScript.remove();
+        throw error;
+      }
     }
 
     function hideOrderConfirmation() {
@@ -3124,7 +3170,8 @@
       confirmation.scrollIntoView({ behavior: 'smooth', block: 'start' });
     }
 
-    async function renderPayPalButtons() {
+    async function renderPayPalButtons(retryAttempt = 0) {
+      const requestId = ++paypalRenderRequestId;
       updateCheckoutStepVisibility();
       const container = document.getElementById('paypal-button-container');
       const checkoutNote = document.getElementById('checkoutProfileNote');
@@ -3150,6 +3197,7 @@
       container.innerHTML = 'Loading secure card checkout...';
       try {
         const paypalInstance = await loadPayPalSdk(currencyCode);
+        if (requestId !== paypalRenderRequestId) return;
         container.innerHTML = '';
         let secureCheckoutToken = '';
         const cardButtons = paypalInstance.Buttons({
@@ -3236,7 +3284,22 @@
         }
         await cardButtons.render('#paypal-button-container');
       } catch (error) {
-        container.innerHTML = 'Debit or credit card checkout could not load. Please refresh the page or try again.';
+        if (requestId !== paypalRenderRequestId) return;
+        console.error('Debit or credit card checkout failed to load:', error);
+
+        if (retryAttempt < 1) {
+          container.classList.add('payment-locked');
+          container.innerHTML = 'Reloading secure card checkout...';
+          await new Promise(resolve => setTimeout(resolve, 700));
+          if (requestId === paypalRenderRequestId) {
+            return renderPayPalButtons(retryAttempt + 1);
+          }
+          return;
+        }
+
+        container.classList.add('payment-locked');
+        container.innerHTML = '<button class="checkout-retry-btn" type="button">Retry Card Checkout</button>';
+        container.querySelector('.checkout-retry-btn')?.addEventListener('click', () => renderPayPalButtons());
       }
     }
 
