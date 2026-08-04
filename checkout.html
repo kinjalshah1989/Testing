@@ -251,17 +251,6 @@
       background: rgba(185,133,47,.10);
       font-weight: 700;
     }
-    .checkout-retry-btn {
-      border: 0;
-      border-radius: 999px;
-      padding: 12px 20px;
-      background: linear-gradient(135deg, var(--ruby), var(--gold));
-      color: #fff;
-      font: inherit;
-      font-weight: 900;
-      cursor: pointer;
-      box-shadow: 0 10px 24px rgba(158,21,51,.20);
-    }
     .top-banner {
       width: 100%;
       padding: 8px 16px;
@@ -1870,6 +1859,7 @@
       console.log("Guest checkout mode: Firebase login is not required.");
     } else {
       onAuthStateChanged(auth, (user) => {
+        document.body.classList.toggle("customer-logged-in", !!user);
         if (user) {
           console.log("Customer is logged in:", user.email);
           sessionStorage.setItem("globalRaniLoggedInMember", JSON.stringify({
@@ -1918,6 +1908,9 @@
     .checkout-shipping-value{min-width:0;color:var(--dark);font-size:14px;line-height:1.45}
     .checkout-shipping-value strong{display:block;font-weight:900;color:var(--dark)}
         @media(max-width:560px){.checkout-shipping-row{grid-template-columns:72px minmax(0,1fr);padding:13px 12px;gap:8px}.checkout-shipping-label,.checkout-shipping-value{font-size:13px}}
+
+    /* Hide the country/currency box on member-only pages after login. */
+    body.customer-logged-in .currency-switcher { display: none !important; }
 </style>
 <style>
 .profile-dropdown .global-profile-logout{display:block;width:100%;position:relative;z-index:1;padding:11px 14px;border:0;border-radius:14px;background:transparent;color:var(--ruby,#9e1533);font:inherit;font-size:14px;font-weight:900;white-space:nowrap;text-align:center;cursor:pointer}.profile-dropdown .global-profile-logout:hover{background:linear-gradient(135deg,rgba(158,21,51,.10),rgba(185,133,47,.16));color:var(--ruby,#9e1533)}.profile-dropdown .global-profile-logout[hidden]{display:none!important}
@@ -2291,8 +2284,6 @@
     let cart = [];
     try { localStorage.removeItem('globalRaniCart'); } catch (error) {}
     let paypalClientConfigPromise = null;
-    const paypalSdkPromises = new Map();
-    let paypalRenderRequestId = 0;
 
     async function getPayPalClientConfig() {
       if (!paypalClientConfigPromise) {
@@ -2308,12 +2299,7 @@
             return data;
           });
       }
-      try {
-        return await paypalClientConfigPromise;
-      } catch (error) {
-        paypalClientConfigPromise = null;
-        throw error;
-      }
+      return paypalClientConfigPromise;
     }
     const paypalSupportedCurrencies = new Set(['AUD','BRL','CAD','CNY','CZK','DKK','EUR','HKD','HUF','ILS','JPY','MYR','MXN','TWD','NZD','NOK','PHP','PLN','GBP','SGD','SEK','CHF','THB','USD']);
     const fallbackRates = {
@@ -2449,14 +2435,12 @@
     }
 
     function getDiscountedUSD(usd) {
-      const base = Number(usd) || 0;
-      return isIndiaSelected() ? base * 0.5 : base;
+      return Number(usd) || 0;
     }
 
     function convertedAmount(usd, currencyCode = selectedCurrency.code) {
       const rate = exchangeRates[currencyCode] || fallbackRates[currencyCode] || 1;
-      const baseUSD = (selectedCurrency.country === 'IN' || currencyCode === 'INR') ? (Number(usd) || 0) * 0.5 : (Number(usd) || 0);
-      return baseUSD * rate;
+      return (Number(usd) || 0) * rate;
     }
 
     function formatCurrency(amount, currencyCode = selectedCurrency.code) {
@@ -2478,16 +2462,13 @@
         el.textContent = formatCurrency(converted);
       });
       const rate = exchangeRates[selectedCurrency.code] || fallbackRates[selectedCurrency.code] || 1;
-      const note = selectedCurrency.country === 'IN'
-        ? ''
-        : selectedCurrency.code === 'USD'
-          ? 'Prices shown in USD.'
-          : `Prices shown in ${selectedCurrency.code}. Live rate used when available: 1 USD ≈ ${rate.toFixed(4)} ${selectedCurrency.code}.`;
+      const note = selectedCurrency.code === 'USD'
+        ? 'Prices shown in USD.'
+        : `Prices shown in ${selectedCurrency.code}. Live rate used when available: 1 USD ≈ ${rate.toFixed(4)} ${selectedCurrency.code}.`;
       const rateNote = document.getElementById('rateNote');
       if (rateNote) {
-        const hideIndiaPricingNote = selectedCurrency.country === 'IN';
-        rateNote.textContent = hideIndiaPricingNote ? '' : note;
-        rateNote.hidden = hideIndiaPricingNote;
+        rateNote.textContent = note;
+        rateNote.hidden = false;
       }
       renderCart();
     }
@@ -2693,10 +2674,7 @@
       const note = document.getElementById('checkoutCurrencyNote');
       if (!note) return;
       const paymentCurrency = paypalSupportedCurrencies.has(selectedCurrency.code) ? selectedCurrency.code : 'USD';
-      if (selectedCurrency.country === 'IN') {
-        note.textContent = '';
-        note.hidden = true;
-      } else if (paymentCurrency === selectedCurrency.code) {
+      if (paymentCurrency === selectedCurrency.code) {
         note.textContent = '';
         note.hidden = true;
       } else {
@@ -2969,8 +2947,8 @@
             checkoutNote.textContent = '';
             checkoutNote.hidden = true;
           } else {
-            checkoutNote.textContent = '';
-            checkoutNote.hidden = true;
+            checkoutNote.textContent = 'Guest shipping details submitted. Payment is ready.';
+            checkoutNote.hidden = false;
           }
         } else if (member) {
           checkoutNote.textContent = verificationRequired
@@ -3091,56 +3069,28 @@
       const config = await getPayPalClientConfig();
       const namespace = `paypal_${currencyCode}`;
       if (window[namespace]) return window[namespace];
-
-      if (paypalSdkPromises.has(currencyCode)) {
-        return paypalSdkPromises.get(currencyCode);
-      }
-
-      const sdkPromise = new Promise((resolve, reject) => {
+      return new Promise((resolve, reject) => {
         const existing = document.querySelector(`script[data-paypal-currency="${currencyCode}"]`);
         if (existing) {
           if (window[namespace]) return resolve(window[namespace]);
-          existing.addEventListener('load', () => {
-            if (window[namespace]) resolve(window[namespace]);
-            else reject(new Error('The PayPal SDK loaded without creating its checkout namespace.'));
-          }, { once: true });
+          existing.addEventListener('load', () => resolve(window[namespace]), { once: true });
           existing.addEventListener('error', () => reject(new Error('The live PayPal checkout could not be loaded.')), { once: true });
           return;
         }
-
         const script = document.createElement('script');
         const params = new URLSearchParams({
           'client-id': config.clientId,
           currency: currencyCode,
           intent: 'capture',
-          components: 'buttons',
-          'enable-funding': 'card'
+          components: 'buttons'
         });
         script.src = `https://www.paypal.com/sdk/js?${params.toString()}`;
         script.dataset.namespace = namespace;
         script.dataset.paypalCurrency = currencyCode;
-        const timeout = window.setTimeout(() => {
-          reject(new Error('The live PayPal checkout took too long to load.'));
-        }, 20000);
-        script.onload = () => {
-          window.clearTimeout(timeout);
-          if (window[namespace]) resolve(window[namespace]);
-          else reject(new Error('The PayPal SDK loaded without creating its checkout namespace.'));
-        };
+        script.onload = () => resolve(window[namespace]);
         script.onerror = () => reject(new Error('The live PayPal checkout could not be loaded.'));
         document.head.appendChild(script);
       });
-
-      paypalSdkPromises.set(currencyCode, sdkPromise);
-
-      try {
-        return await sdkPromise;
-      } catch (error) {
-        paypalSdkPromises.delete(currencyCode);
-        const failedScript = document.querySelector(`script[data-paypal-currency="${currencyCode}"]`);
-        if (failedScript && !window[namespace]) failedScript.remove();
-        throw error;
-      }
     }
 
     function hideOrderConfirmation() {
@@ -3170,8 +3120,7 @@
       confirmation.scrollIntoView({ behavior: 'smooth', block: 'start' });
     }
 
-    async function renderPayPalButtons(retryAttempt = 0) {
-      const requestId = ++paypalRenderRequestId;
+    async function renderPayPalButtons() {
       updateCheckoutStepVisibility();
       const container = document.getElementById('paypal-button-container');
       const checkoutNote = document.getElementById('checkoutProfileNote');
@@ -3197,7 +3146,6 @@
       container.innerHTML = 'Loading secure card checkout...';
       try {
         const paypalInstance = await loadPayPalSdk(currencyCode);
-        if (requestId !== paypalRenderRequestId) return;
         container.innerHTML = '';
         let secureCheckoutToken = '';
         const cardButtons = paypalInstance.Buttons({
@@ -3255,7 +3203,7 @@
                   })
                 });
                 const result = await response.json().catch(() => ({}));
-                if (!response.ok || !result.ok || result.stored !== true) {
+                if (!response.ok || !result.ok) {
                   throw new Error(result.error || 'The paid order could not be recorded.');
                 }
 
@@ -3284,26 +3232,39 @@
         }
         await cardButtons.render('#paypal-button-container');
       } catch (error) {
-        if (requestId !== paypalRenderRequestId) return;
-        console.error('Debit or credit card checkout failed to load:', error);
-
-        if (retryAttempt < 1) {
-          container.classList.add('payment-locked');
-          container.innerHTML = 'Reloading secure card checkout...';
-          await new Promise(resolve => setTimeout(resolve, 700));
-          if (requestId === paypalRenderRequestId) {
-            return renderPayPalButtons(retryAttempt + 1);
-          }
-          return;
-        }
-
-        container.classList.add('payment-locked');
-        container.innerHTML = '<button class="checkout-retry-btn" type="button">Retry Card Checkout</button>';
-        container.querySelector('.checkout-retry-btn')?.addEventListener('click', () => renderPayPalButtons());
+        container.innerHTML = 'Debit or credit card checkout could not load. Please refresh the page or try again.';
       }
     }
 
-    const savedCurrency = localStorage.getItem('globalRaniCurrency');
+
+    const checkoutCountryCurrencyMap = {
+      'united states':'US|USD|United States|$', 'usa':'US|USD|United States|$', 'us':'US|USD|United States|$',
+      'india':'IN|INR|India|₹', 'in':'IN|INR|India|₹',
+      'united kingdom':'GB|GBP|United Kingdom|£', 'uk':'GB|GBP|United Kingdom|£', 'great britain':'GB|GBP|United Kingdom|£',
+      'canada':'CA|CAD|Canada|C$', 'australia':'AU|AUD|Australia|A$',
+      'france':'EU|EUR|Europe|€', 'germany':'EU|EUR|Europe|€', 'italy':'EU|EUR|Europe|€', 'spain':'EU|EUR|Europe|€',
+      'netherlands':'EU|EUR|Europe|€', 'belgium':'EU|EUR|Europe|€', 'ireland':'EU|EUR|Europe|€', 'europe':'EU|EUR|Europe|€',
+      'united arab emirates':'AE|AED|UAE|د.إ', 'uae':'AE|AED|UAE|د.إ', 'dubai':'AE|AED|UAE|د.إ',
+      'singapore':'SG|SGD|Singapore|S$', 'new zealand':'NZ|NZD|New Zealand|NZ$', 'japan':'JP|JPY|Japan|¥',
+      'malaysia':'MY|MYR|Malaysia|RM', 'philippines':'PH|PHP|Philippines|₱', 'mexico':'MX|MXN|Mexico|MX$',
+      'south africa':'ZA|ZAR|South Africa|R', 'saudi arabia':'SA|SAR|Saudi Arabia|﷼', 'qatar':'QA|QAR|Qatar|ر.ق'
+    };
+
+    function currencyFromSavedProfile() {
+      let profile = null;
+      try {
+        profile = JSON.parse(sessionStorage.getItem('globalRaniCustomerProfile') || sessionStorage.getItem('globalRaniGuestShippingProfile') || 'null');
+      } catch (error) {}
+      const country = String(profile?.shippingCountry || '').trim().toLowerCase().replace(/\./g, '');
+      return checkoutCountryCurrencyMap[country] || null;
+    }
+
+    const profileCurrency = currencyFromSavedProfile();
+    if (profileCurrency) {
+      localStorage.setItem('globalRaniCurrency', profileCurrency);
+      sessionStorage.setItem('globalRaniCurrency', profileCurrency);
+    }
+    const savedCurrency = profileCurrency || localStorage.getItem('globalRaniCurrency');
     const countryCurrency = document.getElementById('countryCurrency');
     if (savedCurrency && countryCurrency && [...countryCurrency.options].some(option => option.value === savedCurrency)) {
       countryCurrency.value = savedCurrency;
@@ -3618,6 +3579,7 @@
   }
 
   onAuthStateChanged(auth, (user) => {
+    document.body.classList.toggle('customer-logged-in', !!user);
     if (user) {
       sessionStorage.setItem('globalRaniLoggedInMember', JSON.stringify({
         firstName: '', lastName: '', email: user.email || '', uid: user.uid || ''

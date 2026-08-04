@@ -202,8 +202,7 @@ async function saveOrderToFirestore(orderId, orderData) {
   const { projectId } = getFirebaseCredentials();
   if (!projectId) throw new Error('Firebase project ID is not configured.');
   const token = await getGoogleAccessToken();
-  const documentsUrl = `https://firestore.googleapis.com/v1/projects/${encodeURIComponent(projectId)}/databases/(default)/documents`;
-  const url = `${documentsUrl}/orders?documentId=${encodeURIComponent(orderId)}`;
+  const url = `https://firestore.googleapis.com/v1/projects/${encodeURIComponent(projectId)}/databases/(default)/documents/orders?documentId=${encodeURIComponent(orderId)}`;
   const fields = Object.fromEntries(Object.entries(orderData).map(([key, value]) => [key, firestoreValue(value)]));
   const response = await fetch(url, {
     method: 'POST',
@@ -213,34 +212,11 @@ async function saveOrderToFirestore(orderId, orderData) {
     },
     body: JSON.stringify({ fields })
   });
-  if (response.status === 409) {
-    const existing = await fetch(`${documentsUrl}/orders/${encodeURIComponent(orderId)}`, {
-      headers: { Authorization: `Bearer ${token}` }
-    });
-    if (existing.ok) return existing.json();
-  }
   if (!response.ok) {
     const detail = await response.text();
     throw new Error(`Firestore save failed (${response.status}): ${detail.slice(0, 300)}`);
   }
   return response.json();
-}
-
-async function saveOrderToFirestoreWithRetry(orderId, orderData) {
-  let lastError;
-
-  for (let attempt = 0; attempt < 3; attempt += 1) {
-    try {
-      return await saveOrderToFirestore(orderId, orderData);
-    } catch (error) {
-      lastError = error;
-      if (attempt < 2) {
-        await new Promise(resolve => setTimeout(resolve, 250 * (2 ** attempt)));
-      }
-    }
-  }
-
-  throw lastError;
 }
 
 function escapeHtml(value) {
@@ -330,19 +306,14 @@ export default async function handler(request) {
     }
 
     const results = await Promise.allSettled([
-      saveOrderToFirestoreWithRetry(orderNumber, orderData),
+      saveOrderToFirestore(orderNumber, orderData),
       sendOrderEmail(orderData)
     ]);
     const stored = results[0].status === 'fulfilled';
     const emailed = results[1].status === 'fulfilled';
-    if (!stored) {
-      console.error('Order database save failed', results[0].reason?.message || 'Unknown Firestore error');
-      return json({
-        error: 'Payment succeeded, but the order could not be saved to order history. Please contact support with your PayPal order ID.',
-        orderNumber,
-        stored,
-        emailed
-      }, 500);
+    if (!stored && !emailed) {
+      console.error('Order persistence failed', results.map(result => result.status === 'rejected' ? result.reason?.message : 'ok'));
+      return json({ error: 'Payment succeeded, but the order record could not be delivered. Please contact support with your PayPal order ID.' }, 500);
     }
     return json({ ok: true, orderNumber, stored, emailed });
   } catch (error) {

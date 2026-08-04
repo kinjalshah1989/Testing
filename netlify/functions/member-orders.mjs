@@ -1,5 +1,3 @@
-import crypto from "node:crypto";
-
 const json = (body, status = 200) =>
   new Response(JSON.stringify(body), {
     status,
@@ -8,170 +6,6 @@ const json = (body, status = 200) =>
       "Cache-Control": "no-store, max-age=0",
     },
   });
-
-let firestoreTokenCache = { token: "", expiresAt: 0 };
-
-function parseServiceAccount(rawValue) {
-  let value = String(rawValue || "").trim();
-  if (!value) return null;
-
-  if (
-    (value.startsWith('"') && value.endsWith('"')) ||
-    (value.startsWith("'") && value.endsWith("'"))
-  ) {
-    try {
-      value = JSON.parse(value);
-    } catch {
-      value = value.slice(1, -1);
-    }
-  }
-
-  const parseJson = (candidate) => {
-    try {
-      const parsed =
-        typeof candidate === "string" ? JSON.parse(candidate) : candidate;
-      return parsed && typeof parsed === "object" ? parsed : null;
-    } catch {
-      return null;
-    }
-  };
-
-  let account = parseJson(value);
-
-  if (!account && /^[A-Za-z0-9+/=_\s-]+$/.test(value)) {
-    try {
-      account = parseJson(
-        Buffer.from(value.replace(/\s/g, ""), "base64").toString("utf8")
-      );
-    } catch {}
-  }
-
-  return account;
-}
-
-function normalizePrivateKey(rawValue) {
-  let value = String(rawValue || "")
-    .trim()
-    .replace(/^['"]|['"]$/g, "")
-    .replace(/\\r\\n/g, "\n")
-    .replace(/\\n/g, "\n")
-    .replace(/\\r/g, "\n")
-    .replace(/\r\n?/g, "\n")
-    .trim();
-
-  const match = value.match(
-    /-----BEGIN (?:RSA )?PRIVATE KEY-----([\s\S]*?)-----END (?:RSA )?PRIVATE KEY-----/
-  );
-  if (!match) return "";
-
-  const label = value.includes("BEGIN RSA PRIVATE KEY")
-    ? "RSA PRIVATE KEY"
-    : "PRIVATE KEY";
-  const body = match[1].replace(/[^A-Za-z0-9+/=]/g, "");
-  const lines = body.match(/.{1,64}/g) || [];
-
-  return lines.length
-    ? `-----BEGIN ${label}-----\n${lines.join("\n")}\n-----END ${label}-----\n`
-    : "";
-}
-
-function getFirebaseServiceCredentials() {
-  const serviceAccount =
-    parseServiceAccount(process.env.FIREBASE_SERVICE_ACCOUNT_BASE64) ||
-    parseServiceAccount(process.env.FIREBASE_SERVICE_ACCOUNT_JSON) ||
-    {};
-
-  const clientEmail = String(
-    serviceAccount.client_email ||
-      serviceAccount.clientEmail ||
-      process.env.FIREBASE_CLIENT_EMAIL ||
-      ""
-  ).trim();
-
-  const privateKeyCandidates = [
-    serviceAccount.private_key,
-    serviceAccount.privateKey,
-    process.env.FIREBASE_PRIVATE_KEY_BASE64
-      ? (() => {
-          try {
-            return Buffer.from(
-              process.env.FIREBASE_PRIVATE_KEY_BASE64,
-              "base64"
-            ).toString("utf8");
-          } catch {
-            return "";
-          }
-        })()
-      : "",
-    process.env.FIREBASE_PRIVATE_KEY,
-  ];
-
-  let privateKey = "";
-  for (const candidate of privateKeyCandidates) {
-    privateKey = normalizePrivateKey(candidate);
-    if (privateKey) break;
-  }
-
-  return { clientEmail, privateKey };
-}
-
-function base64Url(value) {
-  return Buffer.from(value).toString("base64url");
-}
-
-async function getFirestoreAccessToken() {
-  if (
-    firestoreTokenCache.token &&
-    Date.now() < firestoreTokenCache.expiresAt
-  ) {
-    return firestoreTokenCache.token;
-  }
-
-  const { clientEmail, privateKey } = getFirebaseServiceCredentials();
-  if (!clientEmail || !privateKey) {
-    throw new Error("Firebase server credentials are not configured.");
-  }
-
-  const now = Math.floor(Date.now() / 1000);
-  const header = base64Url(JSON.stringify({ alg: "RS256", typ: "JWT" }));
-  const claims = base64Url(
-    JSON.stringify({
-      iss: clientEmail,
-      sub: clientEmail,
-      aud: "https://oauth2.googleapis.com/token",
-      scope: "https://www.googleapis.com/auth/datastore",
-      iat: now,
-      exp: now + 3600,
-    })
-  );
-  const unsigned = `${header}.${claims}`;
-  const signature = crypto
-    .createSign("RSA-SHA256")
-    .update(unsigned)
-    .end()
-    .sign(privateKey, "base64url");
-
-  const response = await fetch("https://oauth2.googleapis.com/token", {
-    method: "POST",
-    headers: { "Content-Type": "application/x-www-form-urlencoded" },
-    body: new URLSearchParams({
-      grant_type: "urn:ietf:params:oauth2:grant-type:jwt-bearer",
-      assertion: `${unsigned}.${signature}`,
-    }),
-  });
-
-  if (!response.ok) {
-    throw new Error(`Firebase authentication failed (${response.status}).`);
-  }
-
-  const body = await response.json();
-  firestoreTokenCache = {
-    token: body.access_token,
-    expiresAt: Date.now() + 50 * 60 * 1000,
-  };
-
-  return firestoreTokenCache.token;
-}
 
 function decodeFirebaseToken(idToken) {
   try {
@@ -264,18 +98,15 @@ function fromFirestore(value) {
 function documentToOrder(document) {
   const fields = document?.fields || {};
 
-  return {
-    ...Object.fromEntries(
-      Object.entries(fields).map(([key, value]) => [
-        key,
-        fromFirestore(value),
-      ])
-    ),
-    _documentName: document?.name || "",
-  };
+  return Object.fromEntries(
+    Object.entries(fields).map(([key, value]) => [
+      key,
+      fromFirestore(value),
+    ])
+  );
 }
 
-async function queryOrders({ fieldPath, value, projectId, accessToken }) {
+async function loadOrders({ uid, projectId, idToken }) {
   const url =
     `https://firestore.googleapis.com/v1/projects/` +
     `${encodeURIComponent(projectId)}/databases/(default)/documents:runQuery`;
@@ -283,7 +114,7 @@ async function queryOrders({ fieldPath, value, projectId, accessToken }) {
   const response = await fetch(url, {
     method: "POST",
     headers: {
-      Authorization: `Bearer ${accessToken}`,
+      Authorization: `Bearer ${idToken}`,
       "Content-Type": "application/json",
     },
     body: JSON.stringify({
@@ -296,14 +127,15 @@ async function queryOrders({ fieldPath, value, projectId, accessToken }) {
         where: {
           fieldFilter: {
             field: {
-              fieldPath,
+              fieldPath: "firebaseUserId",
             },
             op: "EQUAL",
             value: {
-              stringValue: value,
+              stringValue: uid,
             },
           },
         },
+        limit: 100,
       },
     }),
   });
@@ -326,106 +158,7 @@ async function queryOrders({ fieldPath, value, projectId, accessToken }) {
 
   return rows
     .filter((row) => row.document)
-    .map((row) => documentToOrder(row.document));
-}
-
-async function listEveryOrder({ projectId, accessToken }) {
-  const orders = [];
-  let pageToken = "";
-
-  do {
-    const query = new URLSearchParams({ pageSize: "300" });
-    if (pageToken) query.set("pageToken", pageToken);
-
-    const url =
-      `https://firestore.googleapis.com/v1/projects/` +
-      `${encodeURIComponent(projectId)}/databases/(default)/documents/orders?${query}`;
-
-    const response = await fetch(url, {
-      headers: {
-        Authorization: `Bearer ${accessToken}`,
-        "Content-Type": "application/json",
-      },
-    });
-
-    if (!response.ok) {
-      const detail = await response.text();
-      throw new Error(
-        `Could not load complete order history (${response.status}): ${detail.slice(0, 180)}`
-      );
-    }
-
-    const body = await response.json();
-    orders.push(...(body.documents || []).map(documentToOrder));
-    pageToken = String(body.nextPageToken || "");
-  } while (pageToken);
-
-  return orders;
-}
-
-function normalizedIdentifier(value) {
-  return String(value || "").trim().toLowerCase();
-}
-
-function orderBelongsToMember(order, { uid, email }) {
-  const memberUid = String(uid || "").trim();
-  const memberEmail = normalizedIdentifier(email);
-
-  const orderUserIds = [
-    order.firebaseUserId,
-    order.firebaseUid,
-    order.userId,
-    order.uid,
-    order.memberId,
-  ].map((value) => String(value || "").trim());
-
-  if (memberUid && orderUserIds.includes(memberUid)) return true;
-
-  const orderEmails = [
-    order.customerEmail,
-    order.payerEmail,
-    order.email,
-    order.customer?.email,
-    order.shipping?.customerEmail,
-    order.shipping?.email,
-  ].map(normalizedIdentifier);
-
-  return Boolean(memberEmail && orderEmails.includes(memberEmail));
-}
-
-async function loadOrders({ uid, email, projectId, idToken }) {
-  let matchedOrders;
-
-  try {
-    const accessToken = await getFirestoreAccessToken();
-    const everyOrder = await listEveryOrder({ projectId, accessToken });
-    matchedOrders = everyOrder.filter((order) =>
-      orderBelongsToMember(order, { uid, email })
-    );
-  } catch (error) {
-    // Preserve the existing account-ID lookup if the server-side history scan
-    // is temporarily unavailable.
-    console.warn("Using member-only order lookup:", error?.message || error);
-    matchedOrders = await queryOrders({
-      fieldPath: "firebaseUserId",
-      value: uid,
-      projectId,
-      accessToken: idToken,
-    });
-  }
-
-  const ordersById = new Map();
-  for (const order of matchedOrders) {
-    const key =
-      order.orderNumber ||
-      order.paypalOrderId ||
-      order.paypalCaptureId ||
-      order._documentName;
-    ordersById.set(key, order);
-  }
-
-  return [...ordersById.values()]
-    .map(({ _documentName, ...order }) => order)
+    .map((row) => documentToOrder(row.document))
     .sort((a, b) =>
       String(b.createdAt || "").localeCompare(String(a.createdAt || ""))
     );
@@ -456,7 +189,6 @@ export default async function handler(request) {
 
     const orders = await loadOrders({
       uid: member.uid,
-      email: member.email,
       projectId: member.projectId,
       idToken,
     });

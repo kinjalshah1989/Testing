@@ -5779,8 +5779,8 @@
             checkoutNote.textContent = '';
             checkoutNote.hidden = true;
           } else {
-            checkoutNote.textContent = '';
-            checkoutNote.hidden = true;
+            checkoutNote.textContent = 'Guest shipping details submitted. Payment is ready.';
+            checkoutNote.hidden = false;
           }
         } else if (member) {
           checkoutNote.textContent = verificationRequired
@@ -6276,164 +6276,68 @@
     const form = chat.querySelector('[data-chat-form]');
     const input = chat.querySelector('[data-chat-input]');
 
-    const SHOPPER_API = '/api/jewelry-products';
-    const SHOPPER_HISTORY_KEY = 'globalRaniAiRecommendationHistory';
-    const unavailableProductIds = new Set();
+    const fallbackProducts = [
+      { id:'maharani-manika-topaz-set', collectionId:'maharani-manika-topaz-set', name:'Maharani Manika Topaz Set', price:65, image:'https://ik.imagekit.io/k0wpvuatq/maharani-manika-topaz-set-1.png', reason:'A regal topaz-toned statement set with matching earrings.' },
+      { id:'maharani-manika-gulabi-set', collectionId:'maharani-manika-gulabi-set', name:'Maharani Manika Gulabi Set', price:65, image:'https://ik.imagekit.io/k0wpvuatq/maharani-manika-gulabi-set-1.png', reason:'A romantic gulabi-hued set for weddings and festive celebrations.' },
+      { id:'rajwadi-navratna-set', collectionId:'rajwadi-navratna-set', name:'Rajwadi Navratna Set', price:85, image:'https://ik.imagekit.io/k0wpvuatq/rajwadi-navratna-set-1.png', reason:'Rich multicolored detailing with a royal navratna-inspired finish.' },
+      { id:'maharani-manika-ruby-set', collectionId:'maharani-manika-ruby-set', name:'Maharani Manika Ruby Set', price:65, image:'https://ik.imagekit.io/k0wpvuatq/maharani-manika-ruby-set-1.png', reason:'A bold ruby-toned Maharani set designed for grand occasions.' },
+      { id:'jaipur-pastel-set', collectionId:'jaipur-pastel-set', name:'The Jaipur Pastel Set', price:65, image:'https://ik.imagekit.io/k0wpvuatq/jaipur-pastel-set-1.jpeg', reason:'Soft pastel kundan that feels elegant, romantic, and camera-ready.' },
+      { id:'noir-pearl-empress-set', collectionId:'noir-pearl-empress-set', name:'The Noir Pearl Empress Set', price:55, image:'https://ik.imagekit.io/k0wpvuatq/noir-pearl-empress-set-1.jpg', reason:'Polished pearls and noir stones for sophisticated evening styling.' },
+      { id:'scarlet-maharani-set', collectionId:'scarlet-maharani-set', name:'The Scarlet Maharani Set', price:55, image:'https://ik.imagekit.io/k0wpvuatq/scarlet-maharani-set-3.jpg', reason:'A bold ruby choker that creates an unmistakable royal statement.' },
+      { id:'lotus-rajwadi-set', collectionId:'lotus-rajwadi-set', name:'The Lotus Rajwadi Set', price:55, image:'https://ik.imagekit.io/k0wpvuatq/lotus-rajwadi-set-1.jpg', reason:'Colorful heritage details with a festive, gift-worthy finish.' }
+    ];
+
     let catalogPromise = null;
-    let recommendationPending = false;
+    let lastShownIds = [];
+    let recommendationRequest = 0;
 
-    const occasionDetails = {
-      wedding: {
-        label: 'a wedding',
-        terms: ['bridal', 'bride', 'wedding', 'maharani', 'rajwadi', 'ruby', 'kundan', 'navratna'],
-        reason: 'A regal statement set selected to shine beautifully at wedding celebrations.'
-      },
-      party: {
-        label: 'a party',
-        terms: ['party', 'statement', 'ruby', 'pearl', 'colorful', 'choker', 'festive'],
-        reason: 'A striking set chosen to add polished sparkle and personality to your party look.'
-      },
-      daily: {
-        label: 'daily wear',
-        terms: ['light', 'pastel', 'pearl', 'delicate', 'soft', 'everyday', 'simple'],
-        reason: 'An elegant set chosen for an easy, versatile look that still feels special.'
-      },
-      gift: {
-        label: 'a gift',
-        terms: ['gift', 'classic', 'pearl', 'pastel', 'colorful', 'timeless'],
-        reason: 'A beautiful, gift-worthy set selected for its versatile and memorable style.'
-      }
-    };
-
-    function productId(product){
-      return String(product?.collectionId || product?.id || product?.slug || product?.name || '').trim().toLowerCase();
-    }
-    function imageUrl(product){
-      const direct = String(product?.image || '').trim();
-      if (direct) return direct;
-      const images = Array.isArray(product?.images) ? product.images : [];
-      return String(images.find(Boolean) || '').trim();
-    }
-    function validProductImageUrl(value){
-      try {
-        const url = new URL(String(value || ''), window.location.href);
-        return /^https?:$/.test(url.protocol) && /\.(?:avif|gif|jpe?g|png|webp)$/i.test(url.pathname);
-      } catch (_) {
-        return false;
-      }
-    }
     function normalizeProduct(raw){
-      const variants = Array.isArray(raw?.variants) ? raw.variants : [];
-      const firstVariant = variants.find(variant => imageUrl(variant)) || {};
-      const id = productId(raw) || productId(firstVariant);
-      const image = imageUrl(raw) || imageUrl(firstVariant);
-      if (!id || !validProductImageUrl(image)) return null;
-      const rawPrice = Number(raw?.price ?? raw?.priceUSD ?? firstVariant?.price ?? firstVariant?.priceUSD);
+      const images = Array.isArray(raw.images) ? raw.images.filter(Boolean) : [];
+      const image = raw.image || images[0] || '';
       return {
-        id,
-        collectionId: String(raw?.collectionId || raw?.id || firstVariant?.collectionId || firstVariant?.id || id),
-        name: String(raw?.name || firstVariant?.name || 'The Global Rani Jewelry Set'),
-        description: String(raw?.description || firstVariant?.description || ''),
-        price: Number.isFinite(rawPrice) && rawPrice > 0 ? rawPrice : null,
+        id: String(raw.id || raw.slug || raw.name || ''),
+        collectionId: String(raw.collectionId || raw.id || raw.slug || ''),
+        name: String(raw.name || 'Global Rani Jewelry Set'),
+        price: Number(raw.price ?? raw.priceUSD ?? 0),
         image,
-        arImage: String(raw?.arImage || firstVariant?.arImage || '').trim()
+        arImage: String(raw.arImage || ''),
+        reason: String(raw.description || 'A handpicked jewelry set from The Global Rani collection.')
       };
     }
-    function catalogItems(data){
-      if (Array.isArray(data?.collections) && data.collections.length) return data.collections;
-      if (Array.isArray(data?.products)) return data.products;
-      return Array.isArray(data) ? data : [];
-    }
+
     async function loadCatalog(){
       if (!catalogPromise) {
-        catalogPromise = fetch(SHOPPER_API, {
-          headers: { Accept: 'application/json' },
-          cache: 'no-store'
-        }).then(async response => {
-          const data = await response.json().catch(() => ({}));
-          if (!response.ok) throw new Error(data?.error || 'The jewelry catalog is unavailable.');
-          const seen = new Set();
-          return catalogItems(data)
-            .map(normalizeProduct)
-            .filter(product => {
-              if (!product || seen.has(product.id)) return false;
-              seen.add(product.id);
-              return true;
-            });
-        }).catch(error => {
-          catalogPromise = null;
-          throw error;
-        });
+        catalogPromise = fetch('/api/jewelry-products?shopper=' + Date.now(), { headers:{ Accept:'application/json' } })
+          .then(response => {
+            if (!response.ok) throw new Error('Catalog unavailable');
+            return response.json();
+          })
+          .then(data => {
+            const source = Array.isArray(data.products) ? data.products : [];
+            const products = source.map(normalizeProduct).filter(product => product.id && product.image);
+            if (!products.length) throw new Error('No products with pictures');
+            return products;
+          })
+          .catch(() => fallbackProducts.map(normalizeProduct).filter(product => product.image));
       }
       return catalogPromise;
     }
-    function imageIsAvailable(url){
-      return new Promise(resolve => {
-        const image = new Image();
-        let finished = false;
-        const finish = available => {
-          if (finished) return;
-          finished = true;
-          clearTimeout(timer);
-          image.onload = null;
-          image.onerror = null;
-          resolve(Boolean(available && image.naturalWidth > 0 && image.naturalHeight > 0));
-        };
-        const timer = window.setTimeout(() => finish(false), 7000);
-        image.onload = () => finish(true);
-        image.onerror = () => finish(false);
-        image.src = url;
-        if (image.complete) finish(image.naturalWidth > 0);
-      });
-    }
-    function readRecommendationHistory(){
-      try {
-        const saved = JSON.parse(sessionStorage.getItem(SHOPPER_HISTORY_KEY) || '[]');
-        return Array.isArray(saved) ? saved.map(String).filter(Boolean).slice(-100) : [];
-      } catch (_) {
-        return [];
-      }
-    }
-    function saveRecommendationHistory(history){
-      try { sessionStorage.setItem(SHOPPER_HISTORY_KEY, JSON.stringify(history.slice(-100))); } catch (_) {}
-    }
+
     function shuffled(items){
-      const copy = items.slice();
+      const copy = [...items];
       for (let index = copy.length - 1; index > 0; index -= 1) {
-        const swapIndex = Math.floor(Math.random() * (index + 1));
-        [copy[index], copy[swapIndex]] = [copy[swapIndex], copy[index]];
+        const randomIndex = Math.floor(Math.random() * (index + 1));
+        [copy[index], copy[randomIndex]] = [copy[randomIndex], copy[index]];
       }
       return copy;
     }
-    function occasionScore(product, occasion){
-      const details = occasionDetails[occasion] || occasionDetails.party;
-      const searchable = `${product.name} ${product.description}`.toLowerCase();
-      return details.terms.reduce((score, term) => score + (searchable.includes(term) ? 1 : 0), 0);
-    }
-    async function nextAvailableProducts(occasion, count = 3){
-      const catalog = await loadCatalog();
-      const history = readRecommendationHistory();
-      const previousGroup = new Set(history.slice(-count));
-      const alreadyShown = new Set(history);
-      const eligible = catalog.filter(product => !unavailableProductIds.has(product.id));
-      const rank = items => shuffled(items).sort((a, b) => occasionScore(b, occasion) - occasionScore(a, occasion));
-      const candidates = [
-        ...rank(eligible.filter(product => !alreadyShown.has(product.id) && !previousGroup.has(product.id))),
-        ...rank(eligible.filter(product => alreadyShown.has(product.id) && !previousGroup.has(product.id))),
-        ...rank(eligible.filter(product => previousGroup.has(product.id)))
-      ];
-      const selected = [];
 
-      for (const product of candidates) {
-        if (selected.some(item => item.id === product.id)) continue;
-        if (await imageIsAvailable(product.image)) {
-          selected.push(product);
-          if (selected.length === count) break;
-          continue;
-        }
-        unavailableProductIds.add(product.id);
-      }
-      if (selected.length) saveRecommendationHistory([...history, ...selected.map(product => product.id)]);
+    function chooseFive(products){
+      const unseen = products.filter(product => !lastShownIds.includes(product.id));
+      const firstPass = shuffled(unseen);
+      const secondPass = shuffled(products.filter(product => !firstPass.some(item => item.id === product.id)));
+      const selected = [...firstPass, ...secondPass].slice(0, Math.min(5, products.length));
+      lastShownIds = selected.map(product => product.id);
       return selected;
     }
 
@@ -6444,16 +6348,18 @@
       messages.appendChild(bubble);
       messages.scrollTop = messages.scrollHeight;
     }
+
     function setOptions(items){
       options.innerHTML = '';
       items.forEach(item => {
         const button = document.createElement('button');
         button.type = 'button';
         button.textContent = item.label;
-        button.addEventListener('click', () => item.action());
+        button.addEventListener('click', item.action);
         options.appendChild(button);
       });
     }
+
     function showMainOptions(){
       setOptions([
         { label:'💍 Wedding', action:()=>recommend('wedding') },
@@ -6462,111 +6368,86 @@
         { label:'🎁 Gift', action:()=>recommend('gift') }
       ]);
     }
-    function addProductCard(product, occasion){
+
+    function resetShopper(){
+      recommendationRequest += 1;
+      messages.innerHTML = '';
+      options.innerHTML = '';
+      input.value = '';
+      addMessage('Namaste, beautiful Rani 👑 I’m your AI personal shopper. Are you shopping for a wedding, party, daily wear, or a gift?', 'bot');
+      showMainOptions();
+      messages.scrollTop = 0;
+    }
+
+    function addProductCard(product){
       const card = document.createElement('div');
       card.className = 'global-rani-shopper-card';
-      const image = document.createElement('img');
-      image.src = product.image;
-      image.alt = product.name;
-      image.loading = 'lazy';
-      image.decoding = 'async';
-
-      const copy = document.createElement('div');
-      copy.className = 'global-rani-shopper-copy';
-      const name = document.createElement('strong');
-      name.textContent = product.name;
-      const reason = document.createElement('small');
-      reason.textContent = occasionDetails[occasion]?.reason || occasionDetails.party.reason;
-      copy.append(name, reason);
-
-      if (product.price) {
-        const price = document.createElement('div');
-        price.className = 'global-rani-shopper-price';
-        price.textContent = `$${product.price.toFixed(2)}`;
-        copy.appendChild(price);
-      }
-
-      const actions = document.createElement('div');
-      actions.className = 'global-rani-shopper-actions';
-      const viewProduct = document.createElement('a');
-      viewProduct.className = 'primary';
-      viewProduct.href = `categories/set-colors.html?set=${encodeURIComponent(product.collectionId || product.id)}`;
-      viewProduct.textContent = 'View product';
-      actions.appendChild(viewProduct);
-
-      if (validProductImageUrl(product.arImage)) {
-        const tryOn = document.createElement('a');
-        tryOn.className = 'secondary';
-        const params = new URLSearchParams({ product: product.id, name: product.name, image: product.arImage });
-        tryOn.href = `ar-tryon.html?${params.toString()}`;
-        tryOn.textContent = 'Try it on';
-        actions.appendChild(tryOn);
-      }
-
-      copy.appendChild(actions);
-      card.append(image, copy);
+      const price = Number(product.price) > 0 ? `$${Number(product.price).toFixed(2)}` : '';
+      const tryOn = product.arImage
+        ? `<a class="secondary" href="ar-tryon.html?product=${encodeURIComponent(product.id)}">Try it on</a>`
+        : '';
+      card.innerHTML = `<img src="${product.image}" alt="${product.name}" loading="lazy" decoding="async"><div class="global-rani-shopper-copy"><strong>${product.name}</strong><small>${product.reason}</small>${price ? `<div class="global-rani-shopper-price">${price}</div>` : ''}<div class="global-rani-shopper-actions"><a class="primary" href="categories/set-colors.html?set=${encodeURIComponent(product.collectionId || product.id)}">View set</a>${tryOn}</div></div>`;
       messages.appendChild(card);
     }
-    async function recommend(occasion, announceChoice = true){
-      if (recommendationPending) return;
-      recommendationPending = true;
-      const details = occasionDetails[occasion] || occasionDetails.party;
-      if (announceChoice) addMessage(`I’m shopping for ${details.label}.`, 'user');
+
+    async function recommend(occasion){
+      const labels = { wedding:'a wedding', party:'a party', daily:'daily wear', gift:'a gift' };
+      const requestId = ++recommendationRequest;
+      addMessage(`I’m shopping for ${labels[occasion]}.`, 'user');
       options.innerHTML = '';
-      try {
-        const products = await nextAvailableProducts(occasion, 3);
-        if (!products.length) {
-          addMessage('I could not find jewelry sets with working images right now. Please try again after more set photos are added.', 'bot');
-          setOptions([
-            { label:'Try again', action:()=>recommend(occasion, false) },
-            { label:'Start over', action:()=>showMainOptions() }
-          ]);
-          return;
-        }
-        addMessage(`👑 My recommendation for ${details.label} is:`, 'bot');
-        products.forEach(product => addProductCard(product, occasion));
-        setOptions([
-          { label:'Recommend another', action:()=>recommend(occasion, false) },
-          { label:'Start over', action:()=>{ addMessage('Let’s find another look.', 'user'); showMainOptions(); } },
-          { label:'Shipping help', action:()=>addMessage('We ship worldwide. Add your favorite to cart and verify your shipping address during checkout.', 'bot') }
-        ]);
-        messages.scrollTop = messages.scrollHeight;
-      } catch (error) {
-        console.warn('AI shopper catalog unavailable:', error);
-        addMessage('I cannot verify the live jewelry photos right now, so I will not recommend a set that may be unavailable. Please try again in a moment.', 'bot');
-        setOptions([
-          { label:'Try again', action:()=>recommend(occasion, false) },
-          { label:'Start over', action:()=>showMainOptions() }
-        ]);
-      } finally {
-        recommendationPending = false;
+      addMessage('Finding five beautiful sets with pictures for you…', 'bot');
+      const loadingBubble = messages.lastElementChild;
+
+      const catalog = await loadCatalog();
+      if (requestId !== recommendationRequest) return;
+      loadingBubble?.remove();
+      const selected = chooseFive(catalog);
+
+      if (!selected.length) {
+        addMessage('I could not find any sets with available pictures right now. Please try again shortly.', 'bot');
+      } else {
+        addMessage(`Beautiful choice 👑 Here are ${selected.length} fresh ${labels[occasion]} recommendations. Tap the same occasion again later for a new mix.`, 'bot');
+        selected.forEach(addProductCard);
       }
+
+      setOptions([
+        { label:'Start over', action:resetShopper },
+        { label:'Show 5 new sets', action:()=>recommend(occasion) }
+      ]);
+      messages.scrollTop = messages.scrollHeight;
     }
+
     function understand(text){
       const clean = String(text || '').toLowerCase();
+      if (/start over|restart|reset/.test(clean)) return resetShopper();
       if (/wedding|bride|bridal|sangeet|reception|shaadi/.test(clean)) return recommend('wedding');
       if (/party|evening|cocktail|night|festive/.test(clean)) return recommend('party');
       if (/daily|everyday|office|casual|lightweight/.test(clean)) return recommend('daily');
       if (/gift|birthday|anniversary|present/.test(clean)) return recommend('gift');
       if (/ship|delivery/.test(clean)) return addMessage('We ship worldwide. Your shipping address is verified before secure checkout.', 'bot');
       if (/return|exchange|refund/.test(clean)) return addMessage('For returns or exchanges, keep your order details ready and contact hello@theglobalrani.com.', 'bot');
-      addMessage('I can style you for a wedding, party, daily wear, or a gift. You can also tell me a color or whether you prefer subtle or statement jewelry.', 'bot');
+      addMessage('I can show you five fresh sets for a wedding, party, daily wear, or a gift.', 'bot');
       showMainOptions();
     }
+
     function openChat(){
       chat.classList.add('open');
       panel.setAttribute('aria-hidden', 'false');
       if (!messages.dataset.started) {
-        addMessage('Namaste, beautiful Rani 👑 I’m your AI personal shopper. Are you shopping for a wedding, party, daily wear, or a gift?', 'bot');
-        showMainOptions();
+        resetShopper();
         messages.dataset.started = 'true';
       }
       setTimeout(() => input.focus(), 80);
     }
-    function closeChat(){ chat.classList.remove('open'); panel.setAttribute('aria-hidden', 'true'); }
+
+    function closeChat(){
+      chat.classList.remove('open');
+      panel.setAttribute('aria-hidden', 'true');
+    }
+
     toggle.addEventListener('click', openChat);
     closeBtn.addEventListener('click', closeChat);
-    form.addEventListener('submit', (event) => {
+    form.addEventListener('submit', event => {
       event.preventDefault();
       const text = input.value.trim();
       if (!text) return;
@@ -6574,7 +6455,9 @@
       input.value = '';
       setTimeout(() => understand(text), 260);
     });
-    document.addEventListener('keydown', (event) => { if (event.key === 'Escape' && chat.classList.contains('open')) closeChat(); });
+    document.addEventListener('keydown', event => {
+      if (event.key === 'Escape' && chat.classList.contains('open')) closeChat();
+    });
     panel.setAttribute('aria-hidden', 'true');
   })();
 </script>
