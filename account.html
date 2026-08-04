@@ -12,9 +12,7 @@
   <style>
     .profile-dropdown [hidden] {
   display: none !important;
-  }
-    /* Logged-in profile pages should not show the Ship to / currency box. */
-    body.customer-logged-in .currency-switcher { display: none !important; }   
+  }   
     :root{--marble:#fff8ef;--ivory:#fffdf8;--gold:#b9852f;--gold-2:#e3b75d;--ruby:#9e1533;--rose:#c73352;--emerald:#037a5c;--dark:#34210e;--shadow:0 25px 70px rgba(70,38,12,.18)}
     *{box-sizing:border-box} html{scroll-behavior:smooth} body{margin:0;font-family:Inter,Arial,sans-serif;color:var(--dark);background:radial-gradient(circle at 20% 10%,rgba(227,183,93,.24),transparent 25%),linear-gradient(135deg,#fff9f0,#fffefd 46%,#f8ead8);min-height:100vh;overflow-x:hidden}.top-banner{padding:8px 16px;text-align:center;font-size:12px;font-weight:900;letter-spacing:.16em;text-transform:uppercase;color:#fff8ef;background:linear-gradient(90deg,var(--ruby),var(--gold),var(--emerald))}nav{position:sticky;top:0;z-index:20;background:rgba(255,253,248,.84);backdrop-filter:blur(15px);border-bottom:1px solid rgba(185,133,47,.24)}.nav-inner{max-width:1180px;margin:auto;padding:14px 22px;display:flex;align-items:center;justify-content:space-between;gap:16px;flex-wrap:wrap}.brand{display:flex;align-items:center;gap:12px;text-decoration:none}.brand img{width:58px;height:58px;border-radius:50%;object-fit:cover;box-shadow:0 8px 20px rgba(185,133,47,.28)}.brand span{font-family:Cinzel,serif;font-weight:800;font-size:22px;color:var(--gold)}.nav-actions{display:flex;gap:12px;align-items:center;flex-wrap:wrap}.back,.mini-link,.add-btn,.logout-btn{border:0;text-decoration:none;color:white;font-weight:800;border-radius:999px;padding:12px 18px;background:linear-gradient(135deg,var(--ruby),var(--gold));box-shadow:0 12px 28px rgba(158,21,51,.22);cursor:pointer}.mini-link{background:linear-gradient(135deg,var(--emerald),var(--gold));padding:10px 15px;font-size:13px}.logout-btn{background:linear-gradient(135deg,#34210e,var(--ruby))}.profile-icon-link{width:46px;height:46px;border-radius:50%;display:inline-grid;place-items:center;text-decoration:none;background:radial-gradient(circle at 35% 25%,#fff7d6,var(--gold) 38%,var(--ruby) 100%);box-shadow:0 12px 28px rgba(158,21,51,.22);border:1px solid rgba(255,245,190,.82);position:relative;overflow:hidden;flex:0 0 auto}.profile-icon-link::before{content:"";position:absolute;width:13px;height:13px;top:10px;border-radius:50%;background:#fff8ef;box-shadow:0 0 0 2px rgba(255,255,255,.28)}.profile-icon-link::after{content:"";position:absolute;width:25px;height:13px;bottom:9px;border-radius:18px 18px 8px 8px;background:#fff8ef}.profile-icon-link.logged-in{background:radial-gradient(circle at 35% 25%,#fff7d6,var(--emerald) 42%,var(--gold) 100%)}
     main{max-width:980px;margin:0 auto;padding:58px 22px 80px}.hero{text-align:center;margin-bottom:28px}.eyebrow{color:var(--ruby);font-weight:900;letter-spacing:.22em;text-transform:uppercase;font-size:13px}h1,h2,h3{font-family:Cinzel,serif}h1{font-size:clamp(38px,6vw,72px);line-height:1;margin:14px 0;background:linear-gradient(120deg,#6f3f10,var(--gold),#f1d184,var(--ruby));-webkit-background-clip:text;color:transparent}.hero p{font-size:17px;line-height:1.7;max-width:720px;margin:0 auto;color:rgba(52,33,14,.78)}.account-panel{border-radius:34px;padding:30px;background:rgba(255,255,255,.72);border:1px solid rgba(185,133,47,.25);box-shadow:var(--shadow);position:relative;overflow:hidden}.choice-screen{display:grid;grid-template-columns:1fr 1fr;gap:18px;margin-bottom:8px}.choice-card{border:1px solid rgba(185,133,47,.28);border-radius:28px;padding:24px;background:linear-gradient(135deg,rgba(255,248,239,.88),rgba(255,255,255,.72));box-shadow:0 16px 36px rgba(70,38,12,.1)}.choice-card h2{margin:0 0 8px;color:var(--ruby)}.choice-card p{line-height:1.6;color:rgba(52,33,14,.75);font-weight:650}.choice-card .add-btn,.choice-card .mini-link{display:inline-block;margin-top:8px;text-align:center}.form-area{display:none;margin-top:20px}.form-area.show{display:block}.tabs{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:20px}.tab-btn{border:1px solid rgba(185,133,47,.34);background:rgba(255,248,239,.78);color:var(--dark);border-radius:999px;padding:11px 16px;font-weight:900;cursor:pointer}.tab-btn.active{background:linear-gradient(135deg,var(--ruby),var(--gold));color:white}.account-form{display:grid;grid-template-columns:1fr 1fr;gap:18px}.field{display:grid;gap:7px}.field.full{grid-column:1/-1}.field label{font-size:13px;font-weight:900;color:var(--ruby)}.field input{border:1px solid rgba(185,133,47,.32);border-radius:18px;padding:14px 16px;background:rgba(255,255,255,.78);color:var(--dark);font:inherit;outline:none}.field input:focus{border-color:rgba(158,21,51,.45);box-shadow:0 0 0 4px rgba(158,21,51,.08)}.actions{display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin-top:20px}.status{font-weight:900;color:var(--emerald)}.member-card{display:none;margin-top:20px;border-radius:26px;padding:22px;background:linear-gradient(135deg,rgba(185,133,47,.12),rgba(3,122,92,.09));border:1px solid rgba(185,133,47,.24)}.member-card.show{display:block}.member-card h2{margin:0 0 8px;color:var(--ruby)}.member-card p{line-height:1.6;margin:6px 0}.note{margin-top:18px;padding:14px 16px;border-radius:18px;background:rgba(158,21,51,.08);font-weight:700;line-height:1.55}@media(max-width:680px){.nav-inner{justify-content:center;text-align:center}.brand span{font-size:18px}.choice-screen{grid-template-columns:1fr}.account-form{grid-template-columns:1fr}.account-panel{padding:20px;border-radius:26px}.add-btn,.logout-btn{width:100%}}
@@ -605,65 +603,14 @@
       }
     }
 
-    const accountCurrencyMap = {
-      'united states': ['USD', '$'], 'usa': ['USD', '$'], 'us': ['USD', '$'],
-      'india': ['INR', '₹'], 'in': ['INR', '₹'],
-      'united kingdom': ['GBP', '£'], 'uk': ['GBP', '£'], 'great britain': ['GBP', '£'],
-      'canada': ['CAD', 'C$'], 'australia': ['AUD', 'A$'],
-      'france': ['EUR', '€'], 'germany': ['EUR', '€'], 'italy': ['EUR', '€'], 'spain': ['EUR', '€'],
-      'netherlands': ['EUR', '€'], 'belgium': ['EUR', '€'], 'ireland': ['EUR', '€'], 'europe': ['EUR', '€'],
-      'united arab emirates': ['AED', 'د.إ'], 'uae': ['AED', 'د.إ'], 'dubai': ['AED', 'د.إ'],
-      'singapore': ['SGD', 'S$'], 'new zealand': ['NZD', 'NZ$'], 'japan': ['JPY', '¥'],
-      'malaysia': ['MYR', 'RM'], 'philippines': ['PHP', '₱'], 'mexico': ['MXN', 'MX$'],
-      'south africa': ['ZAR', 'R'], 'saudi arabia': ['SAR', '﷼'], 'qatar': ['QAR', 'ر.ق']
-    };
-    let accountRates = { USD: 1 };
-    let accountRatesPromise = null;
-
-    function getAccountCountry() {
-      try {
-        const sessionProfile = JSON.parse(sessionStorage.getItem('globalRaniCustomerProfile') || 'null');
-        if (sessionProfile?.shippingCountry) return sessionProfile.shippingCountry;
-      } catch (error) {}
-      try {
-        const member = JSON.parse(sessionStorage.getItem('globalRaniLoggedInMember') || 'null');
-        const profiles = JSON.parse(localStorage.getItem('globalRaniShippingProfiles') || '{}');
-        const profile = profiles[String(member?.email || '').toLowerCase()];
-        return profile?.shippingCountry || '';
-      } catch (error) { return ''; }
-    }
-
-    function getAccountCurrency() {
-      const country = String(getAccountCountry() || '').trim().toLowerCase().replace(/\./g, '');
-      if (accountCurrencyMap[country]) return accountCurrencyMap[country][0];
-      try {
-        const saved = localStorage.getItem('globalRaniCurrency');
-        const code = saved?.split('|')[1];
-        return code || 'USD';
-      } catch (error) { return 'USD'; }
-    }
-
-    async function ensureAccountRates() {
-      if (!accountRatesPromise) {
-        accountRatesPromise = fetch('https://open.er-api.com/v6/latest/USD', { cache: 'no-store' })
-          .then(response => response.ok ? response.json() : Promise.reject(new Error('Rate request failed')))
-          .then(data => { if (data?.rates) accountRates = { ...data.rates, USD: 1 }; })
-          .catch(() => { accountRates = { USD: 1 }; });
-      }
-      await accountRatesPromise;
-    }
-
-    async function renderCurrentCartSummary() {
+    function renderCurrentCartSummary() {
       if (!currentCartItems || !currentCartTotal || !orderPrimaryAction) return;
-      await ensureAccountRates();
-      const currency = getAccountCurrency();
-      const rate = Number(accountRates[currency]) || 1;
       const cart = getCurrentCart();
       const hasItems = cart.length > 0;
 
       if (!hasItems) {
         currentCartItems.innerHTML = '<div class="current-cart-empty">Your cart is empty. Continue shopping to add your favorite jewelry.</div>';
-        currentCartTotal.textContent = `Cart total: ${formatMoney(0, currency)}`;
+        currentCartTotal.textContent = 'Cart total: $0.00';
         orderPrimaryAction.textContent = 'Continue to Shop';
         orderPrimaryAction.href = 'index.html#shop';
         if (orderContinueShopping) orderContinueShopping.hidden = true;
@@ -674,11 +621,11 @@
         const quantity = Math.max(1, Number(item.quantity) || 1);
         const price = Number(item.priceUSD) || 0;
         const image = item.image ? `<img src="${escapeOrderHtml(item.image)}" alt="" loading="lazy" decoding="async">` : '<div></div>';
-        return `<div class="current-cart-item">${image}<div><div class="current-cart-item-name">${escapeOrderHtml(item.name)}</div><div class="current-cart-item-meta">Quantity: ${quantity}</div></div><div class="current-cart-item-price">${formatMoney(price * quantity * rate, currency)}</div></div>`;
+        return `<div class="current-cart-item">${image}<div><div class="current-cart-item-name">${escapeOrderHtml(item.name)}</div><div class="current-cart-item-meta">Quantity: ${quantity}</div></div><div class="current-cart-item-price">${formatMoney(price * quantity, 'USD')}</div></div>`;
       }).join('');
 
-      const totalUSD = cart.reduce((sum, item) => sum + ((Number(item.priceUSD) || 0) * Math.max(1, Number(item.quantity) || 1)), 0);
-      currentCartTotal.textContent = `Cart total: ${formatMoney(totalUSD * rate, currency)}`;
+      const total = cart.reduce((sum, item) => sum + ((Number(item.priceUSD) || 0) * Math.max(1, Number(item.quantity) || 1)), 0);
+      currentCartTotal.textContent = `Cart total: ${formatMoney(total, 'USD')}`;
       orderPrimaryAction.textContent = 'Continue to Checkout';
       orderPrimaryAction.href = 'shipping.html';
       if (orderContinueShopping) orderContinueShopping.hidden = false;
@@ -1015,7 +962,6 @@
     }
 
     onAuthStateChanged(auth, (user) => {
-      document.body.classList.toggle("customer-logged-in", !!user);
       updateProfileIcon(user);
       setSessionMember(user);
       if (user) {

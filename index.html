@@ -6276,70 +6276,18 @@
     const form = chat.querySelector('[data-chat-form]');
     const input = chat.querySelector('[data-chat-input]');
 
-    const fallbackProducts = [
-      { id:'maharani-manika-topaz-set', collectionId:'maharani-manika-topaz-set', name:'Maharani Manika Topaz Set', price:65, image:'https://ik.imagekit.io/k0wpvuatq/maharani-manika-topaz-set-1.png', reason:'A regal topaz-toned statement set with matching earrings.' },
-      { id:'maharani-manika-gulabi-set', collectionId:'maharani-manika-gulabi-set', name:'Maharani Manika Gulabi Set', price:65, image:'https://ik.imagekit.io/k0wpvuatq/maharani-manika-gulabi-set-1.png', reason:'A romantic gulabi-hued set for weddings and festive celebrations.' },
-      { id:'rajwadi-navratna-set', collectionId:'rajwadi-navratna-set', name:'Rajwadi Navratna Set', price:85, image:'https://ik.imagekit.io/k0wpvuatq/rajwadi-navratna-set-1.png', reason:'Rich multicolored detailing with a royal navratna-inspired finish.' },
-      { id:'maharani-manika-ruby-set', collectionId:'maharani-manika-ruby-set', name:'Maharani Manika Ruby Set', price:65, image:'https://ik.imagekit.io/k0wpvuatq/maharani-manika-ruby-set-1.png', reason:'A bold ruby-toned Maharani set designed for grand occasions.' },
-      { id:'jaipur-pastel-set', collectionId:'jaipur-pastel-set', name:'The Jaipur Pastel Set', price:65, image:'https://ik.imagekit.io/k0wpvuatq/jaipur-pastel-set-1.jpeg', reason:'Soft pastel kundan that feels elegant, romantic, and camera-ready.' },
-      { id:'noir-pearl-empress-set', collectionId:'noir-pearl-empress-set', name:'The Noir Pearl Empress Set', price:55, image:'https://ik.imagekit.io/k0wpvuatq/noir-pearl-empress-set-1.jpg', reason:'Polished pearls and noir stones for sophisticated evening styling.' },
-      { id:'scarlet-maharani-set', collectionId:'scarlet-maharani-set', name:'The Scarlet Maharani Set', price:55, image:'https://ik.imagekit.io/k0wpvuatq/scarlet-maharani-set-3.jpg', reason:'A bold ruby choker that creates an unmistakable royal statement.' },
-      { id:'lotus-rajwadi-set', collectionId:'lotus-rajwadi-set', name:'The Lotus Rajwadi Set', price:55, image:'https://ik.imagekit.io/k0wpvuatq/lotus-rajwadi-set-1.jpg', reason:'Colorful heritage details with a festive, gift-worthy finish.' }
-    ];
-
-    let catalogPromise = null;
-    let lastShownIds = [];
-    let recommendationRequest = 0;
-
-    function normalizeProduct(raw){
-      const images = Array.isArray(raw.images) ? raw.images.filter(Boolean) : [];
-      const image = raw.image || images[0] || '';
-      return {
-        id: String(raw.id || raw.slug || raw.name || ''),
-        collectionId: String(raw.collectionId || raw.id || raw.slug || ''),
-        name: String(raw.name || 'Global Rani Jewelry Set'),
-        price: Number(raw.price ?? raw.priceUSD ?? 0),
-        image,
-        arImage: String(raw.arImage || ''),
-        reason: String(raw.description || 'A handpicked jewelry set from The Global Rani collection.')
-      };
-    }
-
-    async function loadCatalog(){
-      if (!catalogPromise) {
-        catalogPromise = fetch('/api/jewelry-products?shopper=' + Date.now(), { headers:{ Accept:'application/json' } })
-          .then(response => {
-            if (!response.ok) throw new Error('Catalog unavailable');
-            return response.json();
-          })
-          .then(data => {
-            const source = Array.isArray(data.products) ? data.products : [];
-            const products = source.map(normalizeProduct).filter(product => product.id && product.image);
-            if (!products.length) throw new Error('No products with pictures');
-            return products;
-          })
-          .catch(() => fallbackProducts.map(normalizeProduct).filter(product => product.image));
-      }
-      return catalogPromise;
-    }
-
-    function shuffled(items){
-      const copy = [...items];
-      for (let index = copy.length - 1; index > 0; index -= 1) {
-        const randomIndex = Math.floor(Math.random() * (index + 1));
-        [copy[index], copy[randomIndex]] = [copy[randomIndex], copy[index]];
-      }
-      return copy;
-    }
-
-    function chooseFive(products){
-      const unseen = products.filter(product => !lastShownIds.includes(product.id));
-      const firstPass = shuffled(unseen);
-      const secondPass = shuffled(products.filter(product => !firstPass.some(item => item.id === product.id)));
-      const selected = [...firstPass, ...secondPass].slice(0, Math.min(5, products.length));
-      lastShownIds = selected.map(product => product.id);
-      return selected;
-    }
+    const products = {
+      jaipur: { name:'The Jaipur Pastel Set', price:'$65.00', image:'https://ik.imagekit.io/k0wpvuatq/jaipur-pastel-set-1.jpeg', id:'jaipur-pastel', reason:'Soft pastel kundan that feels elegant, romantic, and camera-ready.' },
+      noir: { name:'The Noir Pearl Empress Set', price:'$55.00', image:'https://ik.imagekit.io/k0wpvuatq/noir-pearl-empress-set-1.jpg', id:'noir-pearl-empress', reason:'Polished pearls and noir stones for sophisticated evening styling.' },
+      scarlet: { name:'The Scarlet Maharani Set', price:'$55.00', image:'https://ik.imagekit.io/k0wpvuatq/scarlet-maharani-set-3.jpg', id:'scarlet-maharani', reason:'A bold ruby choker that creates an unmistakable royal statement.' },
+      lotus: { name:'The Lotus Rajwadi Set', price:'$55.00', image:'https://ik.imagekit.io/k0wpvuatq/lotus-rajwadi-set-1.jpg', id:'lotus-rajwadi', reason:'Colorful heritage details with a festive, gift-worthy finish.' }
+    };
+    const occasionMap = {
+      wedding: ['scarlet','jaipur','lotus'],
+      party: ['noir','scarlet','jaipur'],
+      daily: ['jaipur','noir'],
+      gift: ['lotus','jaipur','noir']
+    };
 
     function addMessage(text, who){
       const bubble = document.createElement('div');
@@ -6348,18 +6296,16 @@
       messages.appendChild(bubble);
       messages.scrollTop = messages.scrollHeight;
     }
-
     function setOptions(items){
       options.innerHTML = '';
       items.forEach(item => {
         const button = document.createElement('button');
         button.type = 'button';
         button.textContent = item.label;
-        button.addEventListener('click', item.action);
+        button.addEventListener('click', () => item.action());
         options.appendChild(button);
       });
     }
-
     function showMainOptions(){
       setOptions([
         { label:'💍 Wedding', action:()=>recommend('wedding') },
@@ -6368,86 +6314,58 @@
         { label:'🎁 Gift', action:()=>recommend('gift') }
       ]);
     }
-
-    function resetShopper(){
-      recommendationRequest += 1;
-      messages.innerHTML = '';
-      options.innerHTML = '';
-      input.value = '';
-      addMessage('Namaste, beautiful Rani 👑 I’m your AI personal shopper. Are you shopping for a wedding, party, daily wear, or a gift?', 'bot');
-      showMainOptions();
-      messages.scrollTop = 0;
-    }
-
     function addProductCard(product){
       const card = document.createElement('div');
       card.className = 'global-rani-shopper-card';
-      const price = Number(product.price) > 0 ? `$${Number(product.price).toFixed(2)}` : '';
-      const tryOn = product.arImage
-        ? `<a class="secondary" href="ar-tryon.html?product=${encodeURIComponent(product.id)}">Try it on</a>`
-        : '';
-      card.innerHTML = `<img src="${product.image}" alt="${product.name}" loading="lazy" decoding="async"><div class="global-rani-shopper-copy"><strong>${product.name}</strong><small>${product.reason}</small>${price ? `<div class="global-rani-shopper-price">${price}</div>` : ''}<div class="global-rani-shopper-actions"><a class="primary" href="categories/set-colors.html?set=${encodeURIComponent(product.collectionId || product.id)}">View set</a>${tryOn}</div></div>`;
+      card.innerHTML = `<img src="${product.image}" alt="${product.name}" loading="lazy" decoding="async"><div class="global-rani-shopper-copy"><strong>${product.name}</strong><small>${product.reason}</small><div class="global-rani-shopper-price">${product.price}</div><div class="global-rani-shopper-actions"><button type="button" class="primary" data-view-product>View product</button><a class="secondary" href="ar-tryon.html?product=${encodeURIComponent(product.id)}">Try it on</a></div></div>`;
+      card.querySelector('[data-view-product]').addEventListener('click', () => {
+        closeChat();
+        document.getElementById('shop')?.scrollIntoView({ behavior:'smooth', block:'start' });
+        const cards = Array.from(document.querySelectorAll('.royal-3d-card'));
+        const index = cards.findIndex(item => item.dataset.name === product.name);
+        if (index >= 0 && typeof window.setRoyalDropsIndex === 'function') window.setRoyalDropsIndex(index);
+      });
       messages.appendChild(card);
     }
-
-    async function recommend(occasion){
+    function recommend(occasion){
       const labels = { wedding:'a wedding', party:'a party', daily:'daily wear', gift:'a gift' };
-      const requestId = ++recommendationRequest;
       addMessage(`I’m shopping for ${labels[occasion]}.`, 'user');
       options.innerHTML = '';
-      addMessage('Finding five beautiful sets with pictures for you…', 'bot');
-      const loadingBubble = messages.lastElementChild;
-
-      const catalog = await loadCatalog();
-      if (requestId !== recommendationRequest) return;
-      loadingBubble?.remove();
-      const selected = chooseFive(catalog);
-
-      if (!selected.length) {
-        addMessage('I could not find any sets with available pictures right now. Please try again shortly.', 'bot');
-      } else {
-        addMessage(`Beautiful choice 👑 Here are ${selected.length} fresh ${labels[occasion]} recommendations. Tap the same occasion again later for a new mix.`, 'bot');
-        selected.forEach(addProductCard);
-      }
-
-      setOptions([
-        { label:'Start over', action:resetShopper },
-        { label:'Show 5 new sets', action:()=>recommend(occasion) }
-      ]);
-      messages.scrollTop = messages.scrollHeight;
+      setTimeout(() => {
+        addMessage(`Beautiful choice 👑 Here are my best ${labels[occasion]} recommendations, selected for color, impact, and versatility.`, 'bot');
+        occasionMap[occasion].forEach(key => addProductCard(products[key]));
+        setOptions([
+          { label:'Start over', action:()=>{ addMessage('Let’s find another look.', 'user'); showMainOptions(); } },
+          { label:'Shipping help', action:()=>addMessage('We ship worldwide. Add your favorite to cart and verify your shipping address during checkout.', 'bot') }
+        ]);
+        messages.scrollTop = messages.scrollHeight;
+      }, 300);
     }
-
     function understand(text){
       const clean = String(text || '').toLowerCase();
-      if (/start over|restart|reset/.test(clean)) return resetShopper();
       if (/wedding|bride|bridal|sangeet|reception|shaadi/.test(clean)) return recommend('wedding');
       if (/party|evening|cocktail|night|festive/.test(clean)) return recommend('party');
       if (/daily|everyday|office|casual|lightweight/.test(clean)) return recommend('daily');
       if (/gift|birthday|anniversary|present/.test(clean)) return recommend('gift');
       if (/ship|delivery/.test(clean)) return addMessage('We ship worldwide. Your shipping address is verified before secure checkout.', 'bot');
       if (/return|exchange|refund/.test(clean)) return addMessage('For returns or exchanges, keep your order details ready and contact hello@theglobalrani.com.', 'bot');
-      addMessage('I can show you five fresh sets for a wedding, party, daily wear, or a gift.', 'bot');
+      addMessage('I can style you for a wedding, party, daily wear, or a gift. You can also tell me a color or whether you prefer subtle or statement jewelry.', 'bot');
       showMainOptions();
     }
-
     function openChat(){
       chat.classList.add('open');
       panel.setAttribute('aria-hidden', 'false');
       if (!messages.dataset.started) {
-        resetShopper();
+        addMessage('Namaste, beautiful Rani 👑 I’m your AI personal shopper. Are you shopping for a wedding, party, daily wear, or a gift?', 'bot');
+        showMainOptions();
         messages.dataset.started = 'true';
       }
       setTimeout(() => input.focus(), 80);
     }
-
-    function closeChat(){
-      chat.classList.remove('open');
-      panel.setAttribute('aria-hidden', 'true');
-    }
-
+    function closeChat(){ chat.classList.remove('open'); panel.setAttribute('aria-hidden', 'true'); }
     toggle.addEventListener('click', openChat);
     closeBtn.addEventListener('click', closeChat);
-    form.addEventListener('submit', event => {
+    form.addEventListener('submit', (event) => {
       event.preventDefault();
       const text = input.value.trim();
       if (!text) return;
@@ -6455,9 +6373,7 @@
       input.value = '';
       setTimeout(() => understand(text), 260);
     });
-    document.addEventListener('keydown', event => {
-      if (event.key === 'Escape' && chat.classList.contains('open')) closeChat();
-    });
+    document.addEventListener('keydown', (event) => { if (event.key === 'Escape' && chat.classList.contains('open')) closeChat(); });
     panel.setAttribute('aria-hidden', 'true');
   })();
 </script>
