@@ -251,6 +251,24 @@
       background: rgba(185,133,47,.10);
       font-weight: 700;
     }
+    .razorpay-pay-button {
+      width: 100%;
+      min-height: 50px;
+      border: 0;
+      border-radius: 10px;
+      padding: 13px 18px;
+      color: #fff;
+      background: linear-gradient(135deg, #9e1533, #b9852f);
+      box-shadow: 0 10px 22px rgba(111, 27, 51, .22);
+      font: inherit;
+      font-size: 16px;
+      font-weight: 900;
+      cursor: pointer;
+      transition: transform .18s ease, box-shadow .18s ease, opacity .18s ease;
+    }
+    .razorpay-pay-button:hover { transform: translateY(-1px); box-shadow: 0 13px 27px rgba(111, 27, 51, .28); }
+    .razorpay-pay-button:disabled { cursor: wait; opacity: .68; transform: none; }
+    .razorpay-payment-help { margin: 9px 2px 0; color: #756b63; font-size: 12px; line-height: 1.45; }
     .top-banner {
       width: 100%;
       padding: 8px 16px;
@@ -2245,8 +2263,8 @@
 <div class="checkout-currency-note" id="checkoutCurrencyNote">Select your country above to see prices in your local currency.</div>
 <div class="checkout-currency-note" id="checkoutProfileNote">Payment is locked. Please add items to cart, then use your saved member shipping details. Guest checkout is available only when signed out.</div>
 <div class="card-payment-section" id="cardPaymentSection">
-<h3>Pay by Debit or Credit Card</h3>
-<div aria-label="Debit or credit card payment" id="paypal-button-container"></div>
+<h3 id="paymentHeading">Pay by Debit or Credit Card</h3>
+<div aria-label="Secure payment options" id="paypal-button-container"></div>
 </div>
 </div>
 </div>
@@ -2286,6 +2304,7 @@
     let cart = [];
     try { localStorage.removeItem('globalRaniCart'); } catch (error) {}
     let paypalClientConfigPromise = null;
+    let razorpaySdkPromise = null;
 
     async function getPayPalClientConfig() {
       if (!paypalClientConfigPromise) {
@@ -2494,6 +2513,11 @@
 
     function isIndiaSelected(currencyCode = selectedCurrency.code) {
       return selectedCurrency.country === 'IN' || currencyCode === 'INR';
+    }
+
+    function isIndiaCheckoutDestination() {
+      const form = document.getElementById('customerProfileForm');
+      return normalizeCountryName(form?.elements?.shippingCountry?.value) === 'india';
     }
 
     function getDiscountedUSD(usd) {
@@ -2761,13 +2785,14 @@
       if (!note) return;
       const paymentCurrency = paypalSupportedCurrencies.has(selectedCurrency.code) ? selectedCurrency.code : 'USD';
       if (selectedCurrency.country === 'IN') {
-        note.textContent = '';
-        note.hidden = true;
+        note.textContent = 'India orders are processed in INR through secure Razorpay checkout, with UPI and card options shown when eligible.';
+        note.hidden = false;
       } else if (paymentCurrency === selectedCurrency.code) {
         note.textContent = '';
         note.hidden = true;
       } else {
         note.textContent = `Prices are displayed in ${selectedCurrency.code}. PayPal does not support every currency, so checkout will process in USD for this country.`;
+        note.hidden = false;
       }
     }
 
@@ -3182,6 +3207,31 @@
       });
     }
 
+    function loadRazorpaySdk() {
+      if (window.Razorpay) return Promise.resolve(window.Razorpay);
+      if (!razorpaySdkPromise) {
+        razorpaySdkPromise = new Promise((resolve, reject) => {
+          const existing = document.querySelector('script[data-razorpay-checkout]');
+          if (existing) {
+            existing.addEventListener('load', () => resolve(window.Razorpay), { once: true });
+            existing.addEventListener('error', () => reject(new Error('Razorpay checkout could not be loaded.')), { once: true });
+            return;
+          }
+          const script = document.createElement('script');
+          script.src = 'https://checkout.razorpay.com/v1/checkout.js';
+          script.async = true;
+          script.dataset.razorpayCheckout = 'true';
+          script.onload = () => window.Razorpay ? resolve(window.Razorpay) : reject(new Error('Razorpay checkout was unavailable.'));
+          script.onerror = () => reject(new Error('Razorpay checkout could not be loaded.'));
+          document.head.appendChild(script);
+        }).catch(error => {
+          razorpaySdkPromise = null;
+          throw error;
+        });
+      }
+      return razorpaySdkPromise;
+    }
+
     function hideOrderConfirmation() {
       const confirmation = document.getElementById('orderConfirmation');
       if (confirmation) confirmation.classList.remove('show');
@@ -3194,7 +3244,9 @@
       const paidTotalEl = document.getElementById('paidTotal');
       if (!confirmation || !paidItems || !paidTotalEl) return;
       const firstName = details?.payer?.name?.given_name || 'beautiful customer';
-      const orderId = details?.id ? ` Your PayPal order ID is ${details.id}.` : '';
+      const paymentProvider = details?.paymentProvider === 'Razorpay' ? 'Razorpay' : 'PayPal';
+      const referenceLabel = paymentProvider === 'Razorpay' ? 'payment ID' : 'order ID';
+      const orderId = details?.id ? ` Your ${paymentProvider} ${referenceLabel} is ${details.id}.` : '';
       if (thankYouMessage) {
         thankYouMessage.textContent = `Thank you, ${firstName}! Your payment was successful. We are so grateful for your order and cannot wait to prepare your Global Rani jewelry with love and care.${orderId}`;
       }
@@ -3209,12 +3261,156 @@
       confirmation.scrollIntoView({ behavior: 'smooth', block: 'start' });
     }
 
+    function renderRazorpayCheckout(container, renderSequence) {
+      const heading = document.getElementById('paymentHeading');
+      if (heading) heading.textContent = 'Pay with UPI, Debit or Credit Card';
+      container.classList.remove('payment-locked');
+      container.replaceChildren();
+
+      const button = document.createElement('button');
+      button.type = 'button';
+      button.className = 'razorpay-pay-button';
+      const displayedTotalINR = rawConvertedAmount(getCartPayableTotalUSD() + getTipAmountUSD(), 'INR');
+      const readyLabel = `Pay ${formatCurrency(displayedTotalINR, 'INR')} with UPI or Card`;
+      button.textContent = readyLabel;
+      button.setAttribute('aria-label', `${readyLabel} using Razorpay`);
+
+      const help = document.createElement('p');
+      help.className = 'razorpay-payment-help';
+      help.textContent = 'Secure Razorpay checkout. Available methods depend on your approved account and the customer’s eligibility.';
+      container.append(button, help);
+
+      button.addEventListener('click', async () => {
+        button.disabled = true;
+        button.textContent = 'Opening secure Razorpay checkout...';
+        try {
+          const paidCart = cart.map(item => ({ ...item }));
+          const paidTipUSD = getTipAmountUSD();
+          const shipping = getProfileData();
+          if (!isIndiaSelected() || !isIndiaCheckoutDestination()) {
+            throw new Error('Select India as the shipping country before using Razorpay.');
+          }
+
+          const sdkPromise = loadRazorpaySdk();
+          const orderPromise = fetch('/api/create-razorpay-order', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              currency: 'INR',
+              tipUSD: paidTipUSD,
+              items: paidCart.map(item => ({ name: item.name, quantity: getItemQuantity(item) }))
+            })
+          });
+          const [Razorpay, orderResponse] = await Promise.all([sdkPromise, orderPromise]);
+          const orderResult = await orderResponse.json().catch(() => ({}));
+          if (!orderResponse.ok || !orderResult.orderId || !orderResult.keyId) {
+            throw new Error(orderResult.error || 'Razorpay checkout could not be created.');
+          }
+          if (renderSequence !== paypalRenderSequence || !isIndiaSelected() || !isIndiaCheckoutDestination()) return;
+
+          const member = getLoggedInMember();
+          const firstName = String(shipping.customerName || 'beautiful customer').trim().split(/\s+/)[0];
+          const razorpay = new Razorpay({
+            key: orderResult.keyId,
+            amount: orderResult.amountSubunits,
+            currency: 'INR',
+            name: 'The Global Rani',
+            description: 'Jewelry order',
+            order_id: orderResult.orderId,
+            prefill: {
+              name: shipping.customerName || '',
+              email: shipping.customerEmail || '',
+              contact: shipping.customerPhone || ''
+            },
+            theme: { color: '#9e1533' },
+            modal: {
+              ondismiss: () => {
+                if (renderSequence === paypalRenderSequence && isIndiaSelected() && isIndiaCheckoutDestination()) {
+                  button.disabled = false;
+                  button.textContent = readyLabel;
+                }
+              }
+            },
+            handler: async response => {
+              container.classList.add('payment-locked');
+              container.textContent = 'Payment received. Securely verifying and recording your order...';
+              try {
+                const saveResponse = await fetch('/api/create-order', {
+                  method: 'POST',
+                  headers: { 'Content-Type': 'application/json' },
+                  body: JSON.stringify({
+                    paymentProvider: 'razorpay',
+                    razorpayPaymentId: response.razorpay_payment_id,
+                    razorpayOrderId: orderResult.orderId,
+                    razorpaySignature: response.razorpay_signature,
+                    checkoutToken: orderResult.checkoutToken,
+                    checkoutMode: getCheckoutMode(),
+                    firebaseUserId: member?.uid || '',
+                    shipping,
+                    items: paidCart.map(item => ({
+                      name: item.name,
+                      quantity: getItemQuantity(item),
+                      image: item.image || item.imageUrl || '',
+                      priceUSD: Number(item.priceUSD) || 0
+                    }))
+                  })
+                });
+                const savedOrder = await saveResponse.json().catch(() => ({}));
+                if (!saveResponse.ok || !savedOrder.ok) {
+                  throw new Error(savedOrder.error || 'The paid order could not be recorded.');
+                }
+
+                const details = {
+                  id: response.razorpay_payment_id,
+                  paymentProvider: 'Razorpay',
+                  payer: { name: { given_name: firstName } },
+                  globalRaniOrderNumber: savedOrder.orderNumber
+                };
+                showOrderConfirmation(details, paidCart, Number(orderResult.total), 'INR');
+                const thankYouMessage = document.getElementById('thankYouMessage');
+                if (thankYouMessage && savedOrder.orderNumber) {
+                  thankYouMessage.textContent += ` Your Global Rani order number is ${savedOrder.orderNumber}.`;
+                }
+                cart = [];
+                saveCart();
+                profileSubmittedForPayment = false;
+                renderCart();
+                renderPayPalButtons();
+              } catch (error) {
+                console.error('Razorpay order recording failed:', error);
+                container.classList.add('payment-locked');
+                container.textContent = `Your Razorpay payment succeeded, but the order could not be saved automatically. Contact Global Rani with payment ID ${response.razorpay_payment_id}. Your cart has been kept on this device.`;
+              }
+            }
+          });
+          razorpay.on('payment.failed', failure => {
+            const description = failure?.error?.description || 'The payment was not completed. Please try again.';
+            container.classList.add('payment-locked');
+            container.textContent = description;
+            setTimeout(() => {
+              if (renderSequence === paypalRenderSequence && isIndiaSelected() && isIndiaCheckoutDestination()) renderPayPalButtons();
+            }, 2500);
+          });
+          razorpay.open();
+        } catch (error) {
+          console.error('Razorpay checkout error:', error);
+          container.classList.add('payment-locked');
+          container.textContent = error?.message || 'Razorpay checkout could not load. Please try again.';
+        }
+      });
+    }
+
     async function renderPayPalButtons() {
       const renderSequence = ++paypalRenderSequence;
       updateCheckoutStepVisibility();
       const container = document.getElementById('paypal-button-container');
       const checkoutNote = document.getElementById('checkoutProfileNote');
       if (!container) return;
+      const paymentHeading = document.getElementById('paymentHeading');
+      const useRazorpay = isIndiaSelected() && isIndiaCheckoutDestination();
+      if (paymentHeading) paymentHeading.textContent = useRazorpay
+        ? 'Pay with UPI, Debit or Credit Card'
+        : 'Pay by Debit or Credit Card';
       if (!enforceCheckoutAccess()) {
         container.innerHTML = 'Add a product to your cart before checkout.';
         return;
@@ -3228,6 +3424,10 @@
       if (!profileSubmittedForPayment) {
         container.innerHTML = 'Payment is locked until shipping information is verified.';
         if (checkoutNote) checkoutNote.textContent = getLoggedInMember() ? 'Please verify the saved shipping information for this member profile before payment.' : 'Continue as a guest by submitting shipping details below, or create a profile to save details for next time.';
+        return;
+      }
+      if (useRazorpay) {
+        renderRazorpayCheckout(container, renderSequence);
         return;
       }
       const currencyCode = getPayPalCurrency();

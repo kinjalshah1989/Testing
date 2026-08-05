@@ -6276,18 +6276,94 @@
     const form = chat.querySelector('[data-chat-form]');
     const input = chat.querySelector('[data-chat-input]');
 
-    const products = {
-      jaipur: { name:'The Jaipur Pastel Set', price:'$65.00', image:'https://ik.imagekit.io/k0wpvuatq/jaipur-pastel-set-1.jpeg', id:'jaipur-pastel', reason:'Soft pastel kundan that feels elegant, romantic, and camera-ready.' },
-      noir: { name:'The Noir Pearl Empress Set', price:'$55.00', image:'https://ik.imagekit.io/k0wpvuatq/noir-pearl-empress-set-1.jpg', id:'noir-pearl-empress', reason:'Polished pearls and noir stones for sophisticated evening styling.' },
-      scarlet: { name:'The Scarlet Maharani Set', price:'$55.00', image:'https://ik.imagekit.io/k0wpvuatq/scarlet-maharani-set-3.jpg', id:'scarlet-maharani', reason:'A bold ruby choker that creates an unmistakable royal statement.' },
-      lotus: { name:'The Lotus Rajwadi Set', price:'$55.00', image:'https://ik.imagekit.io/k0wpvuatq/lotus-rajwadi-set-1.jpg', id:'lotus-rajwadi', reason:'Colorful heritage details with a festive, gift-worthy finish.' }
-    };
-    const occasionMap = {
-      wedding: ['scarlet','jaipur','lotus'],
-      party: ['noir','scarlet','jaipur'],
-      daily: ['jaipur','noir'],
-      gift: ['lotus','jaipur','noir']
-    };
+    const SUGGESTION_COUNT = 5;
+    const fallbackProducts = [
+      { name:'The Jaipur Pastel Set', priceUSD:65, image:'https://ik.imagekit.io/k0wpvuatq/jaipur-pastel-set-1.jpeg', id:'jaipur-pastel', category:'Jewelry Set', reason:'Soft pastel kundan that feels elegant, romantic, and camera-ready.' },
+      { name:'The Noir Pearl Empress Set', priceUSD:55, image:'https://ik.imagekit.io/k0wpvuatq/noir-pearl-empress-set-1.jpg', id:'noir-pearl-empress', category:'Jewelry Set', reason:'Polished pearls and noir stones for sophisticated evening styling.' },
+      { name:'The Scarlet Maharani Set', priceUSD:55, image:'https://ik.imagekit.io/k0wpvuatq/scarlet-maharani-set-3.jpg', id:'scarlet-maharani', category:'Jewelry Set', reason:'A bold ruby choker that creates an unmistakable royal statement.' },
+      { name:'The Lotus Rajwadi Set', priceUSD:55, image:'https://ik.imagekit.io/k0wpvuatq/lotus-rajwadi-set-1.jpg', id:'lotus-rajwadi', category:'Jewelry Set', reason:'Colorful heritage details with a festive, gift-worthy finish.' },
+      { name:'The Shakti Statement Set', priceUSD:55, image:'https://ik.imagekit.io/k0wpvuatq/shakti-statement-set-1.jpg', id:'shakti-statement-set', category:'Jewelry Set', reason:'A confident statement set with regal presence for celebration looks.' },
+      { name:'Maharani Manika Topaz Set', priceUSD:1, image:'https://ik.imagekit.io/k0wpvuatq/maharani-manika-topaz-set-1.png', id:'maharani-manika-topaz-set', category:'Jewelry Set', reason:'Warm topaz tones bring a polished royal glow to festive styling.' },
+      { name:'Maharani Manika Gulabi Set', priceUSD:65, image:'https://ik.imagekit.io/k0wpvuatq/maharani-manika-gulabi-set-1.png', id:'maharani-manika-gulabi-set', category:'Jewelry Set', reason:'Romantic gulabi color adds softness and richness to special occasions.' },
+      { name:'Rajwadi Navratna Set', priceUSD:85, image:'https://ik.imagekit.io/k0wpvuatq/rajwadi-navratna-set-1.png', id:'rajwadi-navratna-set', category:'Jewelry Set', reason:'Multicolored navratna details make this an easy match for vibrant outfits.' },
+      { name:'Maharani Manika Ruby Set', priceUSD:65, image:'https://ik.imagekit.io/k0wpvuatq/maharani-manika-ruby-set-1.png', id:'maharani-manika-ruby-set', category:'Jewelry Set', reason:'Deep ruby tones create a grand Maharani finish for statement dressing.' },
+      { name:'Statement Earrings Collection', priceUSD:45, image:'https://ik.imagekit.io/k0wpvuatq/category-earrings.jpg', id:'statement-earrings-collection', category:'Earrings', reason:'A versatile earring pick that adds royal polish without requiring a full set.' }
+    ];
+    const occasionLabels = { wedding:'a wedding', party:'a party', daily:'daily wear', gift:'a gift' };
+    const recommendationEndpoints = ['/api/jewelry-products', '/api/earring-products', '/api/bangle-products'];
+    let catalogPromise = null;
+    let lastSuggestionKeys = new Set();
+    let lastOccasion = '';
+    let lastQuery = '';
+    let conversationVersion = 0;
+    const pendingTimers = new Set();
+
+    function productKey(product){
+      return String(product?.id || product?.name || '').trim().toLowerCase();
+    }
+    function normalizeProduct(product){
+      const name = String(product?.name || '').trim();
+      const image = String(product?.image || (Array.isArray(product?.images) ? product.images[0] : '') || '').trim();
+      const priceUSD = Number(product?.priceUSD ?? product?.price);
+      if (!name || !image || !Number.isFinite(priceUSD) || priceUSD < 0) return null;
+      return {
+        id: String(product.id || name).trim(),
+        name,
+        image,
+        priceUSD,
+        category: String(product.category || 'Jewelry').trim(),
+        reason: String(product.reason || product.description || 'A versatile Global Rani piece selected for your look.').trim(),
+        arImage: String(product.arImage || '').trim()
+      };
+    }
+    function shuffleProducts(items){
+      const shuffled = [...items];
+      for (let index = shuffled.length - 1; index > 0; index -= 1) {
+        const randomIndex = Math.floor(Math.random() * (index + 1));
+        [shuffled[index], shuffled[randomIndex]] = [shuffled[randomIndex], shuffled[index]];
+      }
+      return shuffled;
+    }
+    function occasionScore(product, occasion, query){
+      const text = `${product.name} ${product.category} ${product.reason} ${query || ''}`.toLowerCase();
+      const patterns = {
+        wedding: /maharani|bridal|wedding|kundan|rajwadi|ruby|gulabi|choker|set/gi,
+        party: /statement|noir|scarlet|ruby|shakti|choker|sparkle|festive/gi,
+        daily: /earring|pearl|pastel|light|delicate|everyday|bangle|kada/gi,
+        gift: /gift|lotus|pastel|navratna|pearl|set|earring/gi
+      };
+      return (text.match(patterns[occasion] || /jewelry/gi) || []).length;
+    }
+    async function loadProductCatalog(){
+      if (catalogPromise) return catalogPromise;
+      catalogPromise = Promise.allSettled(recommendationEndpoints.map(async endpoint => {
+        if (typeof window.globalRaniCachedJson === 'function') return window.globalRaniCachedJson(endpoint, { ttl: 10 * 60 * 1000 });
+        const response = await fetch(endpoint, { headers:{ Accept:'application/json' } });
+        if (!response.ok) throw new Error(`Catalog request failed (${response.status}).`);
+        return response.json();
+      })).then(results => {
+        const dynamicProducts = results.flatMap(result => {
+          if (result.status !== 'fulfilled') return [];
+          const body = result.value;
+          return Array.isArray(body) ? body : (Array.isArray(body?.products) ? body.products : []);
+        });
+        const unique = new Map();
+        [...dynamicProducts, ...fallbackProducts].map(normalizeProduct).filter(Boolean).forEach(product => {
+          const key = productKey(product);
+          if (!unique.has(key)) unique.set(key, product);
+        });
+        return [...unique.values()];
+      });
+      return catalogPromise;
+    }
+    function pickFreshSuggestions(catalog, occasion, query){
+      const ranked = shuffleProducts(catalog).sort((a, b) => occasionScore(b, occasion, query) - occasionScore(a, occasion, query));
+      const unseen = ranked.filter(product => !lastSuggestionKeys.has(productKey(product)));
+      const previous = ranked.filter(product => lastSuggestionKeys.has(productKey(product)));
+      const selected = [...unseen, ...previous].slice(0, SUGGESTION_COUNT);
+      lastSuggestionKeys = new Set(selected.map(productKey));
+      return selected;
+    }
 
     function addMessage(text, who){
       const bubble = document.createElement('div');
@@ -6295,6 +6371,7 @@
       bubble.textContent = text;
       messages.appendChild(bubble);
       messages.scrollTop = messages.scrollHeight;
+      return bubble;
     }
     function setOptions(items){
       options.innerHTML = '';
@@ -6314,51 +6391,133 @@
         { label:'🎁 Gift', action:()=>recommend('gift') }
       ]);
     }
+    function displayProductPrice(product){
+      if (typeof window.convertedAmount === 'function' && typeof window.formatCurrency === 'function') {
+        return window.formatCurrency(window.convertedAmount(product.priceUSD));
+      }
+      return `$${Number(product.priceUSD || 0).toFixed(2)}`;
+    }
+    function productCollectionUrl(product){
+      const category = `${product.category || ''} ${product.name || ''}`.toLowerCase();
+      if (/earring|jhumka/.test(category)) return 'categories/earrings.html';
+      if (/bangle|kada/.test(category)) return 'categories/bangles-kadas.html';
+      return 'categories/jewelry-sets.html';
+    }
     function addProductCard(product){
       const card = document.createElement('div');
       card.className = 'global-rani-shopper-card';
-      card.innerHTML = `<img src="${product.image}" alt="${product.name}" loading="lazy" decoding="async"><div class="global-rani-shopper-copy"><strong>${product.name}</strong><small>${product.reason}</small><div class="global-rani-shopper-price">${product.price}</div><div class="global-rani-shopper-actions"><button type="button" class="primary" data-view-product>View product</button><a class="secondary" href="ar-tryon.html?product=${encodeURIComponent(product.id)}">Try it on</a></div></div>`;
-      card.querySelector('[data-view-product]').addEventListener('click', () => {
+      const image = document.createElement('img');
+      image.src = product.image;
+      image.alt = product.name;
+      image.loading = 'lazy';
+      image.decoding = 'async';
+      image.addEventListener('error', () => { image.src = 'https://ik.imagekit.io/k0wpvuatq/global-rani-logo.png'; }, { once:true });
+      const copy = document.createElement('div');
+      copy.className = 'global-rani-shopper-copy';
+      const name = document.createElement('strong');
+      name.textContent = product.name;
+      const reason = document.createElement('small');
+      reason.textContent = product.reason;
+      const price = document.createElement('div');
+      price.className = 'global-rani-shopper-price';
+      price.textContent = displayProductPrice(product);
+      const actions = document.createElement('div');
+      actions.className = 'global-rani-shopper-actions';
+      const viewButton = document.createElement('button');
+      viewButton.type = 'button';
+      viewButton.className = 'primary';
+      viewButton.textContent = 'View product';
+      const tryOnLink = document.createElement('a');
+      tryOnLink.className = 'secondary';
+      tryOnLink.href = `ar-tryon.html?product=${encodeURIComponent(product.id)}`;
+      tryOnLink.textContent = 'Try it on';
+      actions.append(viewButton, tryOnLink);
+      copy.append(name, reason, price, actions);
+      card.append(image, copy);
+      viewButton.addEventListener('click', () => {
         closeChat();
-        document.getElementById('shop')?.scrollIntoView({ behavior:'smooth', block:'start' });
         const cards = Array.from(document.querySelectorAll('.royal-3d-card'));
         const index = cards.findIndex(item => item.dataset.name === product.name);
-        if (index >= 0 && typeof window.setRoyalDropsIndex === 'function') window.setRoyalDropsIndex(index);
+        if (index >= 0 && typeof window.setRoyalDropsIndex === 'function') {
+          document.getElementById('shop')?.scrollIntoView({ behavior:'smooth', block:'start' });
+          window.setRoyalDropsIndex(index);
+          return;
+        }
+        window.location.href = productCollectionUrl(product);
       });
       messages.appendChild(card);
     }
-    function recommend(occasion){
-      const labels = { wedding:'a wedding', party:'a party', daily:'daily wear', gift:'a gift' };
-      addMessage(`I’m shopping for ${labels[occasion]}.`, 'user');
+    async function recommend(occasion, { announceUserChoice = true, query = '' } = {}){
+      const label = occasionLabels[occasion] || 'a new look';
+      lastOccasion = occasion;
+      lastQuery = query;
+      if (announceUserChoice) addMessage(`I’m shopping for ${label}.`, 'user');
       options.innerHTML = '';
-      setTimeout(() => {
-        addMessage(`Beautiful choice 👑 Here are my best ${labels[occasion]} recommendations, selected for color, impact, and versatility.`, 'bot');
-        occasionMap[occasion].forEach(key => addProductCard(products[key]));
-        setOptions([
-          { label:'Start over', action:()=>{ addMessage('Let’s find another look.', 'user'); showMainOptions(); } },
-          { label:'Shipping help', action:()=>addMessage('We ship worldwide. Add your favorite to cart and verify your shipping address during checkout.', 'bot') }
-        ]);
-        messages.scrollTop = messages.scrollHeight;
-      }, 300);
+      const requestVersion = conversationVersion;
+      const loadingMessage = addMessage('Styling five fresh picks from the jewelry vault…', 'bot');
+      const catalog = await loadProductCatalog();
+      if (requestVersion !== conversationVersion) return;
+      loadingMessage.remove();
+      const suggestions = pickFreshSuggestions(catalog, occasion, query);
+      addMessage(`Beautiful choice 👑 Here are five fresh ${label} suggestions, selected for color, impact, and versatility.`, 'bot');
+      suggestions.forEach(addProductCard);
+      setOptions([
+        { label:'Start over', action:resetConversation },
+        { label:'✨ 5 new picks', action:()=>{ addMessage('Show me five new suggestions.', 'user'); recommend(lastOccasion || occasion, { announceUserChoice:false, query:lastQuery }); } },
+        { label:'Shipping help', action:()=>addMessage('We ship worldwide. Add your favorite to cart and verify your shipping address during checkout.', 'bot') }
+      ]);
+      messages.scrollTop = messages.scrollHeight;
     }
     function understand(text){
       const clean = String(text || '').toLowerCase();
-      if (/wedding|bride|bridal|sangeet|reception|shaadi/.test(clean)) return recommend('wedding');
-      if (/party|evening|cocktail|night|festive/.test(clean)) return recommend('party');
-      if (/daily|everyday|office|casual|lightweight/.test(clean)) return recommend('daily');
-      if (/gift|birthday|anniversary|present/.test(clean)) return recommend('gift');
+      if (/start over|restart|reset/.test(clean)) return resetConversation();
+      if (/new picks|new suggestions|different suggestions|something else/.test(clean)) {
+        return recommend(lastOccasion || 'party', { announceUserChoice:false, query:lastQuery || clean });
+      }
+      if (/wedding|bride|bridal|sangeet|reception|shaadi/.test(clean)) return recommend('wedding', { announceUserChoice:false, query:clean });
+      if (/party|evening|cocktail|night|festive/.test(clean)) return recommend('party', { announceUserChoice:false, query:clean });
+      if (/daily|everyday|office|casual|lightweight|subtle/.test(clean)) return recommend('daily', { announceUserChoice:false, query:clean });
+      if (/gift|birthday|anniversary|present/.test(clean)) return recommend('gift', { announceUserChoice:false, query:clean });
       if (/ship|delivery/.test(clean)) return addMessage('We ship worldwide. Your shipping address is verified before secure checkout.', 'bot');
       if (/return|exchange|refund/.test(clean)) return addMessage('For returns or exchanges, keep your order details ready and contact hello@theglobalrani.com.', 'bot');
-      addMessage('I can style you for a wedding, party, daily wear, or a gift. You can also tell me a color or whether you prefer subtle or statement jewelry.', 'bot');
+      return recommend('party', { announceUserChoice:false, query:clean });
+    }
+    function clearPendingTimers(){
+      pendingTimers.forEach(timer => clearTimeout(timer));
+      pendingTimers.clear();
+    }
+    function scheduleConversationTask(callback, delay){
+      const scheduledVersion = conversationVersion;
+      const timer = setTimeout(() => {
+        pendingTimers.delete(timer);
+        if (scheduledVersion === conversationVersion) callback();
+      }, delay);
+      pendingTimers.add(timer);
+    }
+    function showWelcome(){
+      addMessage('Namaste, beautiful Rani 👑 I’m your AI personal shopper. Are you shopping for a wedding, party, daily wear, or a gift?', 'bot');
       showMainOptions();
+      messages.dataset.started = 'true';
+    }
+    function resetConversation(){
+      conversationVersion += 1;
+      clearPendingTimers();
+      catalogPromise = null;
+      lastOccasion = '';
+      lastQuery = '';
+      messages.replaceChildren();
+      options.replaceChildren();
+      form.reset();
+      delete messages.dataset.started;
+      showWelcome();
+      messages.scrollTop = 0;
+      requestAnimationFrame(() => input.focus());
     }
     function openChat(){
       chat.classList.add('open');
       panel.setAttribute('aria-hidden', 'false');
       if (!messages.dataset.started) {
-        addMessage('Namaste, beautiful Rani 👑 I’m your AI personal shopper. Are you shopping for a wedding, party, daily wear, or a gift?', 'bot');
-        showMainOptions();
-        messages.dataset.started = 'true';
+        resetConversation();
       }
       setTimeout(() => input.focus(), 80);
     }
@@ -6371,7 +6530,7 @@
       if (!text) return;
       addMessage(text, 'user');
       input.value = '';
-      setTimeout(() => understand(text), 260);
+      scheduleConversationTask(() => understand(text), 260);
     });
     document.addEventListener('keydown', (event) => { if (event.key === 'Escape' && chat.classList.contains('open')) closeChat(); });
     panel.setAttribute('aria-hidden', 'true');

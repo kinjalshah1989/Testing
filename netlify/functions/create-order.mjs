@@ -102,8 +102,11 @@ function cleanItems(items) {
 }
 
 
-function verifyCheckoutToken(token) {
-  const secret = process.env.CHECKOUT_SIGNING_SECRET || process.env.PAYPAL_CLIENT_SECRET;
+function verifyCheckoutToken(token, paymentProvider) {
+  const providerSecret = paymentProvider === 'razorpay'
+    ? process.env.RAZORPAY_KEY_SECRET
+    : process.env.PAYPAL_CLIENT_SECRET;
+  const secret = process.env.CHECKOUT_SIGNING_SECRET || providerSecret;
   if (!secret) throw new Error('Checkout signing secret is not configured.');
   const [body, signature] = String(token || '').split('.');
   if (!body || !signature) throw new Error('Secure checkout token is missing.');
@@ -114,6 +117,63 @@ function verifyCheckoutToken(token) {
   const payload = JSON.parse(Buffer.from(body, 'base64url').toString('utf8'));
   if (!payload?.exp || Date.now() > Number(payload.exp)) throw new Error('Checkout session expired. Please try again.');
   return payload;
+}
+
+function razorpayCredentials() {
+  const keyId = String(process.env.RAZORPAY_KEY_ID || '').trim();
+  const keySecret = String(process.env.RAZORPAY_KEY_SECRET || '').trim();
+  if (!keyId || !keySecret) throw new Error('Razorpay server credentials are not configured.');
+  return { keyId, keySecret };
+}
+
+async function razorpayRequest(path, options = {}) {
+  const { keyId, keySecret } = razorpayCredentials();
+  const response = await fetch(`https://api.razorpay.com/v1${path}`, {
+    ...options,
+    headers: {
+      Authorization: `Basic ${Buffer.from(`${keyId}:${keySecret}`).toString('base64')}`,
+      ...(options.body ? { 'Content-Type': 'application/json' } : {}),
+      ...(options.headers || {})
+    }
+  });
+  const data = await response.json().catch(() => ({}));
+  if (!response.ok) {
+    throw new Error(data?.error?.description || `Razorpay verification failed (${response.status}).`);
+  }
+  return data;
+}
+
+async function verifyRazorpayPayment({ serverOrderId, paymentId, signature, secureCheckout }) {
+  const { keySecret } = razorpayCredentials();
+  const expected = crypto.createHmac('sha256', keySecret)
+    .update(`${serverOrderId}|${paymentId}`)
+    .digest('hex');
+  const suppliedBuffer = Buffer.from(String(signature || ''));
+  const expectedBuffer = Buffer.from(expected);
+  if (suppliedBuffer.length !== expectedBuffer.length || !crypto.timingSafeEqual(suppliedBuffer, expectedBuffer)) {
+    throw new Error('Razorpay payment signature is invalid.');
+  }
+
+  let payment = await razorpayRequest(`/payments/${encodeURIComponent(paymentId)}`);
+  if (payment?.order_id !== serverOrderId) throw new Error('Razorpay payment does not belong to this order.');
+  if (Number(payment?.amount) !== Number(secureCheckout?.amountSubunits)) throw new Error('Paid amount does not match the secure server price.');
+  if (String(payment?.currency || '').toUpperCase() !== 'INR') throw new Error('Razorpay payment currency must be INR.');
+
+  if (payment?.status === 'authorized') {
+    payment = await razorpayRequest(`/payments/${encodeURIComponent(paymentId)}/capture`, {
+      method: 'POST',
+      body: JSON.stringify({ amount: Number(secureCheckout.amountSubunits), currency: 'INR' })
+    });
+  }
+  if (payment?.status !== 'captured' && payment?.captured !== true) {
+    throw new Error('Razorpay has not confirmed a captured payment.');
+  }
+
+  const order = await razorpayRequest(`/orders/${encodeURIComponent(serverOrderId)}`);
+  if (Number(order?.amount) !== Number(secureCheckout?.amountSubunits) || String(order?.currency || '').toUpperCase() !== 'INR') {
+    throw new Error('Razorpay order details do not match the secure checkout.');
+  }
+  return { order, payment };
 }
 function getPayPalBaseUrl() {
   return String(process.env.PAYPAL_ENV || 'live').toLowerCase() === 'sandbox'
@@ -244,7 +304,9 @@ async function sendOrderEmail(orderData) {
       html: `
         <h2>New paid Global Rani order</h2>
         <p><strong>Order:</strong> ${escapeHtml(orderData.orderNumber)}</p>
-        <p><strong>PayPal capture:</strong> ${escapeHtml(orderData.paypalCaptureId)}</p>
+        <p><strong>Payment provider:</strong> ${escapeHtml(orderData.paymentProvider)}</p>
+        <p><strong>Payment method:</strong> ${escapeHtml(orderData.paymentMethod)}</p>
+        <p><strong>Payment reference:</strong> ${escapeHtml(orderData.paymentReference)}</p>
         <p><strong>Paid:</strong> ${escapeHtml(orderData.amount)} ${escapeHtml(orderData.currency)}</p>
         <h3>Customer</h3>
         <p>${escapeHtml(orderData.customerName)}<br>${escapeHtml(orderData.customerEmail)}<br>${escapeHtml(orderData.customerPhone)}</p>
@@ -262,21 +324,71 @@ export default async function handler(request) {
   if (request.method !== 'POST') return json({ error: 'Method not allowed.' }, 405);
   try {
     const payload = await request.json();
-    const paypalOrderId = cleanText(payload?.paypalOrderId, 120);
-    if (!paypalOrderId) return json({ error: 'PayPal order ID is required.' }, 400);
-    const secureCheckout = verifyCheckoutToken(payload?.checkoutToken);
+    const paymentProvider = cleanText(payload?.paymentProvider, 20).toLowerCase() === 'razorpay' ? 'razorpay' : 'paypal';
+    const secureCheckout = verifyCheckoutToken(payload?.checkoutToken, paymentProvider);
+    if (secureCheckout?.provider && secureCheckout.provider !== paymentProvider) {
+      throw new Error('Payment provider does not match the secure checkout.');
+    }
 
-    const { order, capture } = await verifyPayPalOrder(paypalOrderId);
-    const amount = capture?.amount?.value || order?.purchase_units?.[0]?.amount?.value || '';
-    const currency = capture?.amount?.currency_code || order?.purchase_units?.[0]?.amount?.currency_code || '';
+    let providerOrderId = '';
+    let paymentReference = '';
+    let amount = '';
+    let currency = '';
+    let payerEmail = '';
+    let paymentMethod = '';
+    let paypalCaptureId = '';
+    let razorpayPaymentId = '';
+    let razorpayOrderId = '';
+
+    if (paymentProvider === 'razorpay') {
+      razorpayOrderId = cleanText(payload?.razorpayOrderId, 120);
+      razorpayPaymentId = cleanText(payload?.razorpayPaymentId, 120);
+      const razorpaySignature = cleanText(payload?.razorpaySignature, 256);
+      if (!razorpayOrderId || !razorpayPaymentId || !razorpaySignature) {
+        return json({ error: 'Complete Razorpay payment confirmation is required.' }, 400);
+      }
+      const { payment } = await verifyRazorpayPayment({
+        serverOrderId: razorpayOrderId,
+        paymentId: razorpayPaymentId,
+        signature: razorpaySignature,
+        secureCheckout
+      });
+      providerOrderId = razorpayOrderId;
+      paymentReference = razorpayPaymentId;
+      amount = (Number(payment.amount) / 100).toFixed(2);
+      currency = payment.currency || 'INR';
+      payerEmail = cleanText(payment.email, 254);
+      paymentMethod = cleanText(payment.method, 40);
+    } else {
+      const paypalOrderId = cleanText(payload?.paypalOrderId, 120);
+      if (!paypalOrderId) return json({ error: 'PayPal order ID is required.' }, 400);
+      const { order, capture } = await verifyPayPalOrder(paypalOrderId);
+      providerOrderId = paypalOrderId;
+      paypalCaptureId = cleanText(capture?.id, 120);
+      paymentReference = paypalCaptureId || paypalOrderId;
+      amount = capture?.amount?.value || order?.purchase_units?.[0]?.amount?.value || '';
+      currency = capture?.amount?.currency_code || order?.purchase_units?.[0]?.amount?.currency_code || '';
+      payerEmail = cleanText(order?.payer?.email_address, 254);
+      paymentMethod = 'card';
+    }
+
     if (String(currency).toUpperCase() !== String(secureCheckout.currency).toUpperCase()) throw new Error('Paid currency does not match the secure checkout.');
     if (Math.abs(Number(amount) - Number(secureCheckout.total)) > 0.01) throw new Error('Paid amount does not match the secure server price.');
     const profile = payload?.shipping || {};
-    const orderNumber = `GR-${new Date().toISOString().slice(0,10).replaceAll('-', '')}-${paypalOrderId.slice(-8).toUpperCase()}`;
+    if (paymentProvider === 'razorpay' && String(profile?.shippingCountry || '').trim().toLowerCase() !== 'india') {
+      throw new Error('Razorpay checkout is available only for orders shipping to India.');
+    }
+    const orderNumber = `GR-${new Date().toISOString().slice(0,10).replaceAll('-', '')}-${paymentReference.slice(-8).toUpperCase()}`;
     const orderData = {
       orderNumber,
-      paypalOrderId,
-      paypalCaptureId: cleanText(capture?.id, 120),
+      paymentProvider: paymentProvider === 'razorpay' ? 'Razorpay' : 'PayPal',
+      paymentReference,
+      paymentMethod,
+      providerOrderId,
+      paypalOrderId: paymentProvider === 'paypal' ? providerOrderId : '',
+      paypalCaptureId,
+      razorpayOrderId,
+      razorpayPaymentId,
       paymentStatus: 'PAID',
       amount: cleanText(amount, 30),
       currency: cleanText(currency, 10),
@@ -299,7 +411,7 @@ export default async function handler(request) {
       notes: cleanText(profile?.profileNotes, 1000),
       items: cleanItems(secureCheckout.items),
       tipUSD: Number(secureCheckout.tipUSD) || 0,
-      payerEmail: cleanText(order?.payer?.email_address, 254)
+      payerEmail
     };
     if (!orderData.customerName || !orderData.customerEmail || !orderData.shippingAddress.line1 || !orderData.shippingAddress.city || !orderData.shippingAddress.postalCode) {
       return json({ error: 'Complete shipping details are required.' }, 400);
@@ -313,7 +425,7 @@ export default async function handler(request) {
     const emailed = results[1].status === 'fulfilled';
     if (!stored && !emailed) {
       console.error('Order persistence failed', results.map(result => result.status === 'rejected' ? result.reason?.message : 'ok'));
-      return json({ error: 'Payment succeeded, but the order record could not be delivered. Please contact support with your PayPal order ID.' }, 500);
+      return json({ error: `Payment succeeded, but the order record could not be delivered. Please contact support with your ${paymentProvider === 'razorpay' ? 'Razorpay payment ID' : 'PayPal order ID'}.` }, 500);
     }
     return json({ ok: true, orderNumber, stored, emailed });
   } catch (error) {
