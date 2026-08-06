@@ -2236,12 +2236,11 @@
 <div class="tip-total-line" hidden="" id="tipTotalLine"><span>Tip</span><strong id="selectedTipAmount">$0.00</strong></div>
 <p class="tip-thanks">Thank you, we appreciate it.</p>
 </div>
+<div class="card-payment-section" id="cardPaymentSection">
+<div aria-label="Continue to card payment" id="stripe-checkout-container"></div>
+</div>
 <div class="checkout-currency-note" id="checkoutCurrencyNote">Select your country above to see prices in your local currency.</div>
 <div class="checkout-currency-note" id="checkoutProfileNote">Payment is locked. Please add items to cart, then use your saved member shipping details. Guest checkout is available only when signed out.</div>
-<div class="card-payment-section" id="cardPaymentSection">
-<h3>Pay securely with Stripe</h3>
-<div aria-label="Secure Stripe payment" id="stripe-checkout-container"></div>
-</div>
 </div>
 </div>
 </section>
@@ -2290,8 +2289,6 @@
     let currentStripeCurrency = 'USD';
     let profileSubmittedForPayment = false;
     let stripeCheckoutInProgress = false;
-    let stripeCheckoutAutoAttempted = false;
-    let stripeCheckoutRetryMessage = '';
 
     function hasCheckoutCart() {
       return Array.isArray(cart) && cart.some(item => item && item.name && Number(item.priceUSD) > 0);
@@ -2976,7 +2973,7 @@
         renderCustomerProfile();
         const checkoutNote = document.getElementById('checkoutProfileNote');
         if (checkoutNote) { checkoutNote.textContent = ''; checkoutNote.hidden = true; }
-        if (status) status.textContent = 'Thank you! Shipping information is verified. Opening secure Stripe Checkout...';
+        if (status) status.textContent = 'Thank you! Shipping information is verified. Select Continue to payment below.';
         renderStripeCheckout();
         document.getElementById('checkout')?.scrollIntoView({ behavior: shouldContinueToCheckout ? 'smooth' : 'smooth', block: 'start' });
         setTimeout(() => { if (status) status.textContent = ''; }, 6000);
@@ -3092,11 +3089,12 @@
       const paidTipUSD = getTipAmountUSD();
       const shipping = getProfileData();
       const member = getLoggedInMember();
-      stripeCheckoutAutoAttempted = true;
       stripeCheckoutInProgress = true;
-      if (button) button.disabled = true;
+      if (button) {
+        button.disabled = true;
+        button.textContent = 'Please wait…';
+      }
       container.classList.add('payment-locked');
-      container.textContent = 'Opening secure Stripe Checkout...';
       try {
         const response = await fetch('/api/create-stripe-checkout', {
           method: 'POST',
@@ -3128,8 +3126,7 @@
       } catch (error) {
         console.error('Stripe Checkout error:', error);
         stripeCheckoutInProgress = false;
-        stripeCheckoutRetryMessage = error?.message || 'Stripe Checkout could not load automatically.';
-        showStripeRetry(stripeCheckoutRetryMessage);
+        showStripeRetry(error?.message || 'Stripe Checkout could not load. Please try again.');
       }
     }
 
@@ -3144,11 +3141,8 @@
       const button = document.createElement('button');
       button.className = 'checkout-btn bloom-hover';
       button.type = 'button';
-      button.textContent = 'Open Stripe Checkout again';
-      button.addEventListener('click', () => {
-        stripeCheckoutRetryMessage = '';
-        beginStripeCheckout(button);
-      });
+      button.textContent = 'Continue to payment';
+      button.addEventListener('click', () => beginStripeCheckout(button));
       container.append(note, button);
     }
 
@@ -3171,15 +3165,13 @@
       }
       currentStripeCurrency = getStripeCurrency();
       container.classList.remove('payment-locked');
-      if (stripeCheckoutAutoAttempted) {
-        showStripeRetry(stripeCheckoutRetryMessage);
-        return;
-      }
-      stripeCheckoutAutoAttempted = true;
-      stripeCheckoutInProgress = true;
-      container.classList.add('payment-locked');
-      container.textContent = 'Opening secure Stripe Checkout...';
-      setTimeout(() => beginStripeCheckout(), 0);
+      container.replaceChildren();
+      const button = document.createElement('button');
+      button.className = 'checkout-btn bloom-hover';
+      button.type = 'button';
+      button.textContent = 'Continue to payment';
+      button.addEventListener('click', () => beginStripeCheckout(button));
+      container.append(button);
     }
 
     function cleanStripeReturnUrl(parameter) {
@@ -3193,15 +3185,13 @@
       const cancelled = params.get('stripe_cancelled');
       const stripeSessionId = params.get('stripe_session_id');
       if (cancelled) {
-        stripeCheckoutAutoAttempted = true;
-        stripeCheckoutRetryMessage = 'Stripe Checkout was canceled. Your cart is still saved.';
         cleanStripeReturnUrl('stripe_cancelled');
         const checkoutNote = document.getElementById('checkoutProfileNote');
         if (checkoutNote) {
           checkoutNote.hidden = false;
           checkoutNote.textContent = 'Stripe Checkout was canceled. Your cart has been kept, and you can try again whenever you are ready.';
         }
-        showStripeRetry(stripeCheckoutRetryMessage);
+        showStripeRetry('Stripe Checkout was canceled. Your cart is still saved.');
         return;
       }
       if (!stripeSessionId) return;
@@ -3210,7 +3200,6 @@
       let pending = null;
       try { pending = JSON.parse(sessionStorage.getItem('globalRaniPendingStripeCheckout') || 'null'); } catch (error) {}
       if (!pending || pending.sessionId !== stripeSessionId) {
-        stripeCheckoutAutoAttempted = true;
         stripeCheckoutInProgress = true;
         if (container) {
           container.classList.add('payment-locked');
@@ -3220,7 +3209,6 @@
       }
 
       profileSubmittedForPayment = true;
-      stripeCheckoutAutoAttempted = true;
       stripeCheckoutInProgress = true;
       updateCheckoutStepVisibility();
       if (container) {

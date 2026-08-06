@@ -5899,9 +5899,11 @@
       const shipping = getProfileData();
       const member = getLoggedInMember();
       stripeCheckoutInProgress = true;
-      if (button) button.disabled = true;
+      if (button) {
+        button.disabled = true;
+        button.textContent = 'Please wait…';
+      }
       container.classList.add('payment-locked');
-      container.textContent = 'Opening secure Stripe Checkout...';
       try {
         const response = await fetch('/api/create-stripe-checkout', {
           method: 'POST',
@@ -5957,7 +5959,7 @@
       }
       currentStripeCurrency = getStripeCurrency();
       container.classList.remove('payment-locked');
-      container.innerHTML = '<button class="checkout-btn bloom-hover" id="stripeCheckoutButton" type="button">Continue to secure payment</button><p class="checkout-currency-note">You will complete payment on Stripe’s secure checkout page.</p>';
+      container.innerHTML = '<button class="checkout-btn bloom-hover" id="stripeCheckoutButton" type="button">Continue to payment</button>';
       container.querySelector('#stripeCheckoutButton')?.addEventListener('click', event => beginStripeCheckout(event.currentTarget));
     }
 
