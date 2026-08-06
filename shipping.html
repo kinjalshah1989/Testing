@@ -324,29 +324,7 @@
         <div class="field full"><label for="customerName">Full Name</label><input id="customerName" name="customerName" required placeholder="Full name"></div>
         <div class="field"><label for="customerEmail">Email</label><input id="customerEmail" name="customerEmail" type="email" required placeholder="name@example.com"></div>
         <div class="field"><label for="customerPhone">Phone Number</label><input id="customerPhone" name="customerPhone" required placeholder="Phone number"></div>
-        <div class="field">
-          <label for="shippingCountry">Country</label>
-          <select id="shippingCountry" name="shippingCountry" autocomplete="country-name" required>
-            <option value="" selected disabled>Select a country</option>
-            <option value="United States">United States</option>
-            <option value="India">India</option>
-            <option value="United Kingdom">United Kingdom</option>
-            <option value="Canada">Canada</option>
-            <option value="Australia">Australia</option>
-            <option value="Europe">Europe</option>
-            <option value="UAE">United Arab Emirates</option>
-            <option value="Singapore">Singapore</option>
-            <option value="New Zealand">New Zealand</option>
-            <option value="Japan">Japan</option>
-            <option value="Malaysia">Malaysia</option>
-            <option value="Philippines">Philippines</option>
-            <option value="Mexico">Mexico</option>
-            <option value="South Africa">South Africa</option>
-            <option value="Saudi Arabia">Saudi Arabia</option>
-            <option value="Qatar">Qatar</option>
-            <option value="Other">Other</option>
-          </select>
-        </div>
+        <div class="field"><label for="shippingCountry">Country</label><input id="shippingCountry" name="shippingCountry" required placeholder="Country"></div>
         <div class="field full"><label for="shippingAddress1">Street Address</label><input id="shippingAddress1" name="shippingAddress1" required placeholder="Street address"></div>
         <div class="field full"><label for="shippingAddress2">Apartment / Suite / Landmark</label><input id="shippingAddress2" name="shippingAddress2" placeholder="Apartment, suite, landmark"></div>
         <div class="field"><label for="shippingCity">City</label><input id="shippingCity" name="shippingCity" required placeholder="City"></div>
@@ -385,33 +363,6 @@
     let currentUser = null;
     let isShippingLoggingOut = false;
 
-    const shippingCurrencySelections = Object.freeze({
-      "United States": "US|USD|United States|$",
-      "India": "IN|INR|India|₹",
-      "United Kingdom": "GB|GBP|United Kingdom|£",
-      "Canada": "CA|CAD|Canada|C$",
-      "Australia": "AU|AUD|Australia|A$",
-      "Europe": "EU|EUR|Europe|€",
-      "UAE": "AE|AED|UAE|د.إ",
-      "Singapore": "SG|SGD|Singapore|S$",
-      "New Zealand": "NZ|NZD|New Zealand|NZ$",
-      "Japan": "JP|JPY|Japan|¥",
-      "Malaysia": "MY|MYR|Malaysia|RM",
-      "Philippines": "PH|PHP|Philippines|₱",
-      "Mexico": "MX|MXN|Mexico|MX$",
-      "South Africa": "ZA|ZAR|South Africa|R",
-      "Saudi Arabia": "SA|SAR|Saudi Arabia|﷼",
-      "Qatar": "QA|QAR|Qatar|ر.ق",
-      "Other": "US|USD|United States|$"
-    });
-
-    function persistCurrencyForShippingCountry(countryName) {
-      const selection = shippingCurrencySelections[String(countryName || "").trim()];
-      if (!selection) return false;
-      localStorage.setItem("globalRaniCurrency", selection);
-      return true;
-    }
-
 
     function clearMemberSessionForGuestCheckout() {
       // Keep only the shopping cart and harmless display preferences.
@@ -447,17 +398,6 @@
       sessionStorage.setItem("globalRaniGuestShippingDraft", JSON.stringify(draft));
     }
 
-    function setFormFieldValue(field, value) {
-      if (!field || typeof value !== "string") return;
-      if (field instanceof HTMLSelectElement && value && !Array.from(field.options).some((option) => option.value === value)) {
-        const savedCountryOption = document.createElement("option");
-        savedCountryOption.value = value;
-        savedCountryOption.textContent = value;
-        field.appendChild(savedCountryOption);
-      }
-      field.value = value;
-    }
-
     function restoreShippingDraft() {
       try {
         const draft = JSON.parse(sessionStorage.getItem("globalRaniGuestShippingDraft") || "null");
@@ -465,7 +405,7 @@
         const form = document.getElementById("shippingForm");
         Object.entries(draft).forEach(([key, value]) => {
           const field = form && form.elements[key];
-          setFormFieldValue(field, value);
+          if (field && typeof value === "string") field.value = value;
         });
         sessionStorage.removeItem("globalRaniGuestShippingDraft");
       } catch (error) {
@@ -518,16 +458,12 @@
       const form = document.getElementById("shippingForm");
       Object.entries(saved).forEach(([key, value]) => {
         const field = form.elements[key];
-        setFormFieldValue(field, value);
+        if (field && typeof value === "string") field.value = value;
       });
-      persistCurrencyForShippingCountry(form.elements.shippingCountry?.value);
     }
 
     const requestedCheckoutMode = sessionStorage.getItem("globalRaniCheckoutMode");
     setupShippingLogout();
-    document.getElementById("shippingCountry")?.addEventListener("change", (event) => {
-      persistCurrencyForShippingCountry(event.currentTarget.value);
-    });
 
     if (requestedCheckoutMode === "guest") {
       currentUser = null;
@@ -564,7 +500,6 @@
       const form = event.currentTarget;
       if (!form.reportValidity()) return;
       const profile = Object.fromEntries(new FormData(form).entries());
-      persistCurrencyForShippingCountry(profile.shippingCountry);
       const profileWithTime = { ...profile, savedAt: new Date().toISOString() };
       if (requestedCheckoutMode === "guest") {
         sessionStorage.setItem("globalRaniGuestShippingProfile", JSON.stringify(profileWithTime));

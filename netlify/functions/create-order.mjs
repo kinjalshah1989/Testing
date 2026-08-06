@@ -102,11 +102,8 @@ function cleanItems(items) {
 }
 
 
-function verifyCheckoutToken(token, paymentProvider) {
-  const providerSecret = paymentProvider === 'razorpay'
-    ? process.env.RAZORPAY_KEY_SECRET
-    : process.env.PAYPAL_CLIENT_SECRET;
-  const secret = process.env.CHECKOUT_SIGNING_SECRET || providerSecret;
+function verifyCheckoutToken(token) {
+  const secret = process.env.CHECKOUT_SIGNING_SECRET || process.env.STRIPE_SECRET_KEY;
   if (!secret) throw new Error('Checkout signing secret is not configured.');
   const [body, signature] = String(token || '').split('.');
   if (!body || !signature) throw new Error('Secure checkout token is missing.');
@@ -119,95 +116,22 @@ function verifyCheckoutToken(token, paymentProvider) {
   return payload;
 }
 
-function razorpayCredentials() {
-  const keyId = String(process.env.RAZORPAY_KEY_ID || '').trim();
-  const keySecret = String(process.env.RAZORPAY_KEY_SECRET || '').trim();
-  if (!keyId || !keySecret) throw new Error('Razorpay server credentials are not configured.');
-  return { keyId, keySecret };
-}
-
-async function razorpayRequest(path, options = {}) {
-  const { keyId, keySecret } = razorpayCredentials();
-  const response = await fetch(`https://api.razorpay.com/v1${path}`, {
-    ...options,
-    headers: {
-      Authorization: `Basic ${Buffer.from(`${keyId}:${keySecret}`).toString('base64')}`,
-      ...(options.body ? { 'Content-Type': 'application/json' } : {}),
-      ...(options.headers || {})
-    }
+async function verifyStripeSession(sessionId) {
+  const secretKey = String(process.env.STRIPE_SECRET_KEY || '').trim();
+  if (!secretKey) throw new Error('Stripe server credentials are not configured.');
+  if (!/^cs_(?:test_|live_)?[A-Za-z0-9]+$/.test(sessionId)) throw new Error('Stripe Checkout session ID is invalid.');
+  const response = await fetch(`https://api.stripe.com/v1/checkout/sessions/${encodeURIComponent(sessionId)}`, {
+    headers: { Authorization: `Bearer ${secretKey}` }
   });
-  const data = await response.json().catch(() => ({}));
-  if (!response.ok) {
-    throw new Error(data?.error?.description || `Razorpay verification failed (${response.status}).`);
+  const session = await response.json().catch(() => ({}));
+  if (!response.ok) throw new Error(session?.error?.message || `Stripe payment verification failed (${response.status}).`);
+  if (session?.mode !== 'payment' || session?.metadata?.store !== 'global_rani') {
+    throw new Error('This Stripe Checkout session does not belong to The Global Rani.');
   }
-  return data;
-}
-
-async function verifyRazorpayPayment({ serverOrderId, paymentId, signature, secureCheckout }) {
-  const { keySecret } = razorpayCredentials();
-  const expected = crypto.createHmac('sha256', keySecret)
-    .update(`${serverOrderId}|${paymentId}`)
-    .digest('hex');
-  const suppliedBuffer = Buffer.from(String(signature || ''));
-  const expectedBuffer = Buffer.from(expected);
-  if (suppliedBuffer.length !== expectedBuffer.length || !crypto.timingSafeEqual(suppliedBuffer, expectedBuffer)) {
-    throw new Error('Razorpay payment signature is invalid.');
+  if (session?.status !== 'complete' || session?.payment_status !== 'paid') {
+    throw new Error('Stripe has not confirmed a completed payment.');
   }
-
-  let payment = await razorpayRequest(`/payments/${encodeURIComponent(paymentId)}`);
-  if (payment?.order_id !== serverOrderId) throw new Error('Razorpay payment does not belong to this order.');
-  if (Number(payment?.amount) !== Number(secureCheckout?.amountSubunits)) throw new Error('Paid amount does not match the secure server price.');
-  if (String(payment?.currency || '').toUpperCase() !== 'INR') throw new Error('Razorpay payment currency must be INR.');
-
-  if (payment?.status === 'authorized') {
-    payment = await razorpayRequest(`/payments/${encodeURIComponent(paymentId)}/capture`, {
-      method: 'POST',
-      body: JSON.stringify({ amount: Number(secureCheckout.amountSubunits), currency: 'INR' })
-    });
-  }
-  if (payment?.status !== 'captured' && payment?.captured !== true) {
-    throw new Error('Razorpay has not confirmed a captured payment.');
-  }
-
-  const order = await razorpayRequest(`/orders/${encodeURIComponent(serverOrderId)}`);
-  if (Number(order?.amount) !== Number(secureCheckout?.amountSubunits) || String(order?.currency || '').toUpperCase() !== 'INR') {
-    throw new Error('Razorpay order details do not match the secure checkout.');
-  }
-  return { order, payment };
-}
-function getPayPalBaseUrl() {
-  return String(process.env.PAYPAL_ENV || 'live').toLowerCase() === 'sandbox'
-    ? 'https://api-m.sandbox.paypal.com'
-    : 'https://api-m.paypal.com';
-}
-
-async function getPayPalAccessToken() {
-  const clientId = process.env.PAYPAL_CLIENT_ID;
-  const clientSecret = process.env.PAYPAL_CLIENT_SECRET;
-  if (!clientId || !clientSecret) throw new Error('PayPal server credentials are not configured.');
-  const response = await fetch(`${getPayPalBaseUrl()}/v1/oauth2/token`, {
-    method: 'POST',
-    headers: {
-      Authorization: `Basic ${Buffer.from(`${clientId}:${clientSecret}`).toString('base64')}`,
-      'Content-Type': 'application/x-www-form-urlencoded'
-    },
-    body: 'grant_type=client_credentials'
-  });
-  if (!response.ok) throw new Error(`PayPal authentication failed (${response.status}).`);
-  return (await response.json()).access_token;
-}
-
-async function verifyPayPalOrder(orderId) {
-  const token = await getPayPalAccessToken();
-  const response = await fetch(`${getPayPalBaseUrl()}/v2/checkout/orders/${encodeURIComponent(orderId)}`, {
-    headers: { Authorization: `Bearer ${token}` }
-  });
-  if (!response.ok) throw new Error(`PayPal order verification failed (${response.status}).`);
-  const order = await response.json();
-  const captures = (order.purchase_units || []).flatMap(unit => unit?.payments?.captures || []);
-  const completedCapture = captures.find(capture => capture?.status === 'COMPLETED');
-  if (order.status !== 'COMPLETED' || !completedCapture) throw new Error('PayPal has not confirmed a completed payment.');
-  return { order, capture: completedCapture };
+  return session;
 }
 
 function base64Url(input) {
@@ -273,6 +197,7 @@ async function saveOrderToFirestore(orderId, orderData) {
     body: JSON.stringify({ fields })
   });
   if (!response.ok) {
+    if (response.status === 409) return { alreadyExists: true };
     const detail = await response.text();
     throw new Error(`Firestore save failed (${response.status}): ${detail.slice(0, 300)}`);
   }
@@ -304,9 +229,7 @@ async function sendOrderEmail(orderData) {
       html: `
         <h2>New paid Global Rani order</h2>
         <p><strong>Order:</strong> ${escapeHtml(orderData.orderNumber)}</p>
-        <p><strong>Payment provider:</strong> ${escapeHtml(orderData.paymentProvider)}</p>
-        <p><strong>Payment method:</strong> ${escapeHtml(orderData.paymentMethod)}</p>
-        <p><strong>Payment reference:</strong> ${escapeHtml(orderData.paymentReference)}</p>
+        <p><strong>Stripe payment:</strong> ${escapeHtml(orderData.stripePaymentIntentId)}</p>
         <p><strong>Paid:</strong> ${escapeHtml(orderData.amount)} ${escapeHtml(orderData.currency)}</p>
         <h3>Customer</h3>
         <p>${escapeHtml(orderData.customerName)}<br>${escapeHtml(orderData.customerEmail)}<br>${escapeHtml(orderData.customerPhone)}</p>
@@ -324,73 +247,28 @@ export default async function handler(request) {
   if (request.method !== 'POST') return json({ error: 'Method not allowed.' }, 405);
   try {
     const payload = await request.json();
-    const paymentProvider = cleanText(payload?.paymentProvider, 20).toLowerCase() === 'razorpay' ? 'razorpay' : 'paypal';
-    const secureCheckout = verifyCheckoutToken(payload?.checkoutToken, paymentProvider);
-    if (secureCheckout?.provider && secureCheckout.provider !== paymentProvider) {
-      throw new Error('Payment provider does not match the secure checkout.');
-    }
+    const stripeSessionId = cleanText(payload?.stripeSessionId, 160);
+    if (!stripeSessionId) return json({ error: 'Stripe Checkout session ID is required.' }, 400);
+    const secureCheckout = verifyCheckoutToken(payload?.checkoutToken);
 
-    let providerOrderId = '';
-    let paymentReference = '';
-    let amount = '';
-    let currency = '';
-    let payerEmail = '';
-    let paymentMethod = '';
-    let paypalCaptureId = '';
-    let razorpayPaymentId = '';
-    let razorpayOrderId = '';
-
-    if (paymentProvider === 'razorpay') {
-      razorpayOrderId = cleanText(payload?.razorpayOrderId, 120);
-      razorpayPaymentId = cleanText(payload?.razorpayPaymentId, 120);
-      const razorpaySignature = cleanText(payload?.razorpaySignature, 256);
-      if (!razorpayOrderId || !razorpayPaymentId || !razorpaySignature) {
-        return json({ error: 'Complete Razorpay payment confirmation is required.' }, 400);
-      }
-      const { payment } = await verifyRazorpayPayment({
-        serverOrderId: razorpayOrderId,
-        paymentId: razorpayPaymentId,
-        signature: razorpaySignature,
-        secureCheckout
-      });
-      providerOrderId = razorpayOrderId;
-      paymentReference = razorpayPaymentId;
-      amount = (Number(payment.amount) / 100).toFixed(2);
-      currency = payment.currency || 'INR';
-      payerEmail = cleanText(payment.email, 254);
-      paymentMethod = cleanText(payment.method, 40);
-    } else {
-      const paypalOrderId = cleanText(payload?.paypalOrderId, 120);
-      if (!paypalOrderId) return json({ error: 'PayPal order ID is required.' }, 400);
-      const { order, capture } = await verifyPayPalOrder(paypalOrderId);
-      providerOrderId = paypalOrderId;
-      paypalCaptureId = cleanText(capture?.id, 120);
-      paymentReference = paypalCaptureId || paypalOrderId;
-      amount = capture?.amount?.value || order?.purchase_units?.[0]?.amount?.value || '';
-      currency = capture?.amount?.currency_code || order?.purchase_units?.[0]?.amount?.currency_code || '';
-      payerEmail = cleanText(order?.payer?.email_address, 254);
-      paymentMethod = 'card';
-    }
-
+    const session = await verifyStripeSession(stripeSessionId);
+    const amountTotal = Number(session?.amount_total);
+    const currency = String(session?.currency || '').toUpperCase();
+    if (!secureCheckout.reference || session?.metadata?.checkout_reference !== secureCheckout.reference) throw new Error('Stripe Checkout session does not match this order.');
     if (String(currency).toUpperCase() !== String(secureCheckout.currency).toUpperCase()) throw new Error('Paid currency does not match the secure checkout.');
-    if (Math.abs(Number(amount) - Number(secureCheckout.total)) > 0.01) throw new Error('Paid amount does not match the secure server price.');
+    if (!Number.isSafeInteger(amountTotal) || amountTotal !== Number(secureCheckout.amountTotal)) throw new Error('Paid amount does not match the secure server price.');
     const profile = payload?.shipping || {};
-    if (paymentProvider === 'razorpay' && String(profile?.shippingCountry || '').trim().toLowerCase() !== 'india') {
-      throw new Error('Razorpay checkout is available only for orders shipping to India.');
-    }
-    const orderNumber = `GR-${new Date().toISOString().slice(0,10).replaceAll('-', '')}-${paymentReference.slice(-8).toUpperCase()}`;
+    const stripeCreatedAt = Number(session?.created) > 0 ? new Date(Number(session.created) * 1000) : new Date();
+    const orderDate = stripeCreatedAt.toISOString().slice(0, 10).replaceAll('-', '');
+    const orderSuffix = stripeSessionId.replace(/[^A-Za-z0-9]/g, '').slice(-12).toUpperCase();
+    const orderNumber = `GR-${orderDate}-${orderSuffix}`;
     const orderData = {
       orderNumber,
-      paymentProvider: paymentProvider === 'razorpay' ? 'Razorpay' : 'PayPal',
-      paymentReference,
-      paymentMethod,
-      providerOrderId,
-      paypalOrderId: paymentProvider === 'paypal' ? providerOrderId : '',
-      paypalCaptureId,
-      razorpayOrderId,
-      razorpayPaymentId,
+      stripeCheckoutSessionId: stripeSessionId,
+      stripePaymentIntentId: cleanText(typeof session?.payment_intent === 'string' ? session.payment_intent : session?.payment_intent?.id, 160),
       paymentStatus: 'PAID',
-      amount: cleanText(amount, 30),
+      amountMinor: amountTotal,
+      amount: currency === 'JPY' ? String(amountTotal) : (amountTotal / 100).toFixed(2),
       currency: cleanText(currency, 10),
       createdAt: new Date().toISOString(),
       fulfillmentStatus: 'NEW',
@@ -411,23 +289,34 @@ export default async function handler(request) {
       notes: cleanText(profile?.profileNotes, 1000),
       items: cleanItems(secureCheckout.items),
       tipUSD: Number(secureCheckout.tipUSD) || 0,
-      payerEmail
+      payerEmail: cleanText(session?.customer_details?.email || session?.customer_email, 254)
     };
     if (!orderData.customerName || !orderData.customerEmail || !orderData.shippingAddress.line1 || !orderData.shippingAddress.city || !orderData.shippingAddress.postalCode) {
       return json({ error: 'Complete shipping details are required.' }, 400);
     }
 
-    const results = await Promise.allSettled([
-      saveOrderToFirestore(orderNumber, orderData),
-      sendOrderEmail(orderData)
-    ]);
-    const stored = results[0].status === 'fulfilled';
-    const emailed = results[1].status === 'fulfilled';
-    if (!stored && !emailed) {
-      console.error('Order persistence failed', results.map(result => result.status === 'rejected' ? result.reason?.message : 'ok'));
-      return json({ error: `Payment succeeded, but the order record could not be delivered. Please contact support with your ${paymentProvider === 'razorpay' ? 'Razorpay payment ID' : 'PayPal order ID'}.` }, 500);
+    let stored = false;
+    let emailed = false;
+    let alreadyStored = false;
+    try {
+      const saved = await saveOrderToFirestore(orderNumber, orderData);
+      stored = true;
+      alreadyStored = saved?.alreadyExists === true;
+    } catch (error) {
+      console.error('Order storage failed:', error?.message || error);
     }
-    return json({ ok: true, orderNumber, stored, emailed });
+    if (!alreadyStored) {
+      try {
+        await sendOrderEmail(orderData);
+        emailed = true;
+      } catch (error) {
+        console.error('Order email failed:', error?.message || error);
+      }
+    }
+    if (!stored && !emailed) {
+      return json({ error: 'Payment succeeded, but the order record could not be delivered. Please contact support with your Stripe Checkout session ID.' }, 500);
+    }
+    return json({ ok: true, orderNumber, stored, emailed, alreadyStored, stripeSessionId, amountTotal, currency });
   } catch (error) {
     console.error('create-order error:', error);
     return json({ error: error?.message || 'Order could not be recorded.' }, 500);
