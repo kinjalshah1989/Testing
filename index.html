@@ -4601,11 +4601,153 @@
 .profile-dropdown .global-profile-logout{display:block;width:100%;position:relative;z-index:1;padding:11px 14px;border:0;border-radius:14px;background:transparent;color:var(--ruby,#9e1533);font:inherit;font-size:14px;font-weight:900;white-space:nowrap;text-align:center;cursor:pointer}.profile-dropdown .global-profile-logout:hover{background:linear-gradient(135deg,rgba(158,21,51,.10),rgba(185,133,47,.16));color:var(--ruby,#9e1533)}.profile-dropdown .global-profile-logout[hidden]{display:none!important}
 </style>
 
+<style id="shop-by-color-styles">
+.shop-by-color {
+  position: relative;
+  z-index: 9;
+  width: 100%;
+  max-width: none;
+  min-height: 0;
+  margin: 0 auto;
+  padding: 0;
+  overflow: visible;
+  border: 0;
+  background: transparent;
+  box-shadow: none;
+}
+.shop-by-color__inner {
+  width: 100%;
+  margin: 0 auto;
+  padding: 2px 12px 4px;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
+  column-gap: clamp(20px, 2vw, 36px);
+  align-items: center;
+}
+.shop-by-color__eyebrow {
+  grid-column: 1;
+  justify-self: end;
+  margin: 0;
+  color: var(--ruby);
+  font-family: inherit;
+  font-size: 13px;
+  font-weight: 900;
+  line-height: 1.2;
+  letter-spacing: .22em;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+.shop-by-color__row {
+  grid-column: 2;
+  display: flex;
+  justify-content: center;
+  gap: clamp(28px, 3vw, 46px);
+  align-items: start;
+}
+.color-story {
+  flex: 0 0 58px;
+  width: 58px;
+  min-width: 0;
+  color: var(--dark);
+  text-align: center;
+  text-decoration: none;
+  -webkit-tap-highlight-color: transparent;
+}
+.color-story__image {
+  position: relative;
+  display: block;
+  width: 54px;
+  aspect-ratio: 1;
+  margin: 0 auto 3px;
+  overflow: hidden;
+  border: 3px solid var(--accent);
+  border-radius: 50%;
+  background: radial-gradient(
+    circle at 32% 24%,
+    rgba(255,255,255,.94) 0 10%,
+    var(--soft) 42%,
+    color-mix(in srgb, var(--accent) 48%, var(--soft)) 100%
+  );
+  box-shadow:
+    0 0 0 2px rgba(255,255,255,.9),
+    0 7px 15px color-mix(in srgb, var(--accent) 20%, transparent);
+  transition: transform .22s ease, box-shadow .22s ease;
+}
+.color-story__image::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  background: linear-gradient(145deg, rgba(255,255,255,.20), transparent 50%, rgba(52,33,14,.08));
+  pointer-events: none;
+}
+.color-story__label {
+  display: block;
+  overflow: hidden;
+  color: #2f2018;
+  font-size: 10.5px;
+  font-weight: 900;
+  line-height: 1.05;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.color-story:hover .color-story__image,
+.color-story:focus-visible .color-story__image {
+  transform: translateY(-3px) scale(1.04);
+  box-shadow:
+    0 0 0 2px rgba(255,255,255,.96),
+    0 10px 20px color-mix(in srgb, var(--accent) 30%, transparent);
+}
+.color-story:focus-visible { outline: 0; }
+.color-story:focus-visible .color-story__label {
+  color: var(--ruby);
+  text-decoration: underline;
+  text-underline-offset: 4px;
+}
+@media (max-width: 1100px) {
+  .shop-by-color__inner { display: block; }
+  .shop-by-color__eyebrow {
+    display: block;
+    margin: 0 8px 4px;
+    font-size: 11px;
+    text-align: left;
+  }
+}
+@media (max-width: 900px) {
+  .shop-by-color__inner { padding: 2px 8px 4px; }
+  .shop-by-color__row {
+    justify-content: flex-start;
+    gap: 14px;
+    overflow-x: auto;
+    overscroll-behavior-inline: contain;
+    padding: 2px 4px 5px;
+    scroll-padding-inline: 4px;
+    scroll-snap-type: inline mandatory;
+    scrollbar-width: none;
+  }
+  .color-story { flex-basis: 64px; width: 64px; }
+  .shop-by-color__row::-webkit-scrollbar { display: none; }
+  .color-story { scroll-snap-align: start; }
+  .color-story__image { width: 52px; }
+  .color-story__label { font-size: 10px; }
+}
+@media (max-width: 520px) {
+  .shop-by-color__inner { padding: 2px 6px 3px; }
+  .shop-by-color__row { gap: 11px; }
+  .color-story { flex-basis: 58px; width: 58px; }
+  .color-story__image { width: 48px; border-width: 2px; }
+  .color-story__label { font-size: 9.5px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .color-story__image { transition: none; }
+}
+</style>
+
 <style id="global-rani-hover-surprise-styles">
 .global-rani-surprise-heading-bottom{margin:32px 0 0}.global-rani-surprise-heading-bottom h2{margin-bottom:0}.global-rani-surprise-section{width:min(100%,1380px);margin:0 auto;padding:58px clamp(14px,3vw,22px) 70px;position:relative;overflow:hidden}.global-rani-surprise-heading{text-align:center;margin-bottom:30px}.global-rani-surprise-heading h2{font-family:'Cinzel',serif;color:var(--gold,#b9852f);font-size:clamp(30px,5vw,62px);line-height:1.12;margin:8px 0 12px}.global-rani-surprise-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:clamp(14px,2vw,24px);align-items:start}.global-rani-surprise-card{position:relative;display:block;text-decoration:none;width:100%;min-width:0;padding:0;border:0;border-radius:clamp(20px,2vw,30px);background:#f7eee7;overflow:hidden;cursor:pointer;box-shadow:0 22px 50px rgba(91,50,62,.14);isolation:isolate;touch-action:manipulation;-webkit-tap-highlight-color:transparent}.global-rani-surprise-card img{display:block;width:100%;height:auto;aspect-ratio:1/1;object-fit:cover;object-position:center top;transition:opacity .28s ease,transform .35s ease,filter .35s ease}.global-rani-surprise-card .surprise-hover{position:absolute;inset:0;opacity:0;transform:translateY(18px) scale(.96)}.global-rani-surprise-card .surprise-label{position:absolute;left:50%;bottom:clamp(12px,1.5vw,18px);z-index:4;transform:translateX(-50%);max-width:calc(100% - 24px);padding:clamp(8px,1vw,10px) clamp(14px,1.5vw,17px);border-radius:999px;background:rgba(255,255,255,.94);color:#8e1531;font-size:clamp(13px,1.25vw,16px);font-weight:900;letter-spacing:.06em;white-space:nowrap;box-shadow:0 8px 22px rgba(83,40,53,.16)}.global-rani-surprise-card:hover .surprise-default,.global-rani-surprise-card.is-active .surprise-default{opacity:0;transform:scale(.985);filter:blur(1px)}.global-rani-surprise-card:hover .surprise-hover,.global-rani-surprise-card.is-active .surprise-hover{opacity:1;animation:globalRaniBasketJiggle .62s ease-in-out infinite alternate}.global-rani-surprise-card:hover .surprise-label,.global-rani-surprise-card.is-active .surprise-label{background:#8e1531;color:#fff}@keyframes globalRaniBasketJiggle{0%{transform:translateY(-7px) rotate(-1.1deg) scale(1.018)}25%{transform:translateY(-13px) rotate(1.4deg) scale(1.035)}50%{transform:translateY(-10px) rotate(-1.5deg) scale(1.04)}75%{transform:translateY(-14px) rotate(1deg) scale(1.032)}100%{transform:translateY(-8px) rotate(-.7deg) scale(1.02)}}
 @media(max-width:1050px){.global-rani-surprise-grid{grid-template-columns:repeat(2,minmax(0,1fr));max-width:860px;margin:0 auto}.global-rani-surprise-card:last-child{grid-column:1/-1;width:min(100%,420px);justify-self:center}.global-rani-surprise-section{padding-top:46px;padding-bottom:58px}}
-@media(max-width:640px){.global-rani-surprise-heading-bottom{margin-top:22px}.global-rani-surprise-section{padding:36px 12px 46px}.global-rani-surprise-heading{margin-bottom:20px}.global-rani-surprise-heading h2{font-size:clamp(27px,9vw,40px)}.global-rani-surprise-grid{grid-template-columns:1fr;gap:16px;max-width:430px}.global-rani-surprise-card,.global-rani-surprise-card:last-child{grid-column:auto;width:100%;max-width:none;border-radius:22px}.global-rani-surprise-card img{aspect-ratio:4/5}.global-rani-surprise-card .surprise-label{bottom:12px;font-size:14px;padding:8px 15px}}
-@media(max-width:380px){.global-rani-surprise-section{padding-left:8px;padding-right:8px}.global-rani-surprise-grid{gap:12px}.global-rani-surprise-card{border-radius:18px}}
+@media(max-width:640px){.global-rani-surprise-heading-bottom{margin-top:18px}.global-rani-surprise-section{padding:22px 6px 30px}.global-rani-surprise-heading{margin-bottom:16px}.global-rani-surprise-heading h2{font-size:clamp(25px,8vw,36px)}.global-rani-surprise-grid{grid-template-columns:repeat(3,minmax(0,1fr));gap:clamp(5px,2vw,12px);max-width:none;width:100%;padding:0 2px}.global-rani-surprise-card,.global-rani-surprise-card:last-child{grid-column:auto;width:100%;max-width:none;border-radius:clamp(14px,4vw,22px)}.global-rani-surprise-card img{aspect-ratio:1/1;object-position:center top}.global-rani-surprise-card .surprise-label{bottom:clamp(6px,1.6vw,10px);max-width:calc(100% - 10px);font-size:clamp(9px,3vw,13px);padding:clamp(4px,1.4vw,7px) clamp(7px,2.4vw,13px)}}
+@media(max-width:380px){.global-rani-surprise-section{padding:16px 3px 22px}.global-rani-surprise-grid{gap:4px;padding:0}.global-rani-surprise-card{border-radius:14px}.global-rani-surprise-card .surprise-label{bottom:5px;font-size:8.5px;padding:3px 6px}}
 @media(hover:none){.global-rani-surprise-card:hover .surprise-default{opacity:1;transform:none;filter:none}.global-rani-surprise-card:hover .surprise-hover{opacity:0;animation:none}.global-rani-surprise-card:hover .surprise-label{background:rgba(255,255,255,.94);color:#8e1531}.global-rani-surprise-card.is-active .surprise-default{opacity:0;transform:scale(.985);filter:blur(1px)}.global-rani-surprise-card.is-active .surprise-hover{opacity:1;animation:globalRaniBasketJiggle .62s ease-in-out infinite alternate}.global-rani-surprise-card.is-active .surprise-label{background:#8e1531;color:#fff}}
 @media(prefers-reduced-motion:reduce){.global-rani-surprise-card img{transition:none}.global-rani-surprise-card:hover .surprise-hover,.global-rani-surprise-card.is-active .surprise-hover{animation:none;transform:none}}
 </style>
@@ -4644,6 +4786,45 @@
 <button aria-label="Open shopping bag" class="cart-btn cart-icon-btn bloom-hover" onclick="toggleCart()"><span aria-hidden="true" class="bag-icon"><svg focusable="false" role="img" viewbox="0 0 24 24"><path class="bag-body" d="M6.2 8.2h11.6l1.1 12.1H5.1L6.2 8.2Z"></path><path class="bag-handle" d="M8.8 9V6.9a3.2 3.2 0 0 1 6.4 0V9"></path><path class="bag-sparkle" d="M17.2 3.4l.45 1.15 1.15.45-1.15.45-.45 1.15-.45-1.15-1.15-.45 1.15-.45.45-1.15Z"></path></svg></span><span class="cart-count-badge" id="cartCount">0</span></button><div class="hamburger-menu-wrap"><button aria-expanded="false" aria-haspopup="true" aria-label="Open site menu" class="hamburger-toggle bloom-hover" type="button"><span></span><span></span><span></span></button><div class="hamburger-dropdown" role="menu"><span class="hamburger-menu-label">Menu</span><a href="#categories" role="menuitem">Shop by Collection</a><a href="#shop" role="menuitem">Royal Drops</a><a href="#ugc" role="menuitem">Videos</a><a href="#happy-customers" role="menuitem">Happy Customers</a><a href="behind-the-global-rani.html" role="menuitem">Behind The Global Rani</a></div></div>
 </div>
 </nav>
+<section aria-label="Shop jewelry by color" class="shop-by-color">
+  <div class="shop-by-color__inner">
+    <h2 class="shop-by-color__eyebrow">Shop by colors</h2>
+    <div class="shop-by-color__row" role="list">
+      <a aria-label="Shop pink jewelry" class="color-story" href="categories/set-colors.html" role="listitem" style="--accent:#ef4f9a;--soft:#ffe0ef;">
+        <span aria-hidden="true" class="color-story__image"></span>
+        <span class="color-story__label">Pink</span>
+      </a>
+      <a aria-label="Shop red jewelry" class="color-story" href="categories/set-colors.html" role="listitem" style="--accent:#d3243d;--soft:#ffe0e4;">
+        <span aria-hidden="true" class="color-story__image"></span>
+        <span class="color-story__label">Red</span>
+      </a>
+      <a aria-label="Shop green jewelry" class="color-story" href="categories/set-colors.html" role="listitem" style="--accent:#16865d;--soft:#dff7eb;">
+        <span aria-hidden="true" class="color-story__image"></span>
+        <span class="color-story__label">Green</span>
+      </a>
+      <a aria-label="Shop blue jewelry" class="color-story" href="categories/set-colors.html" role="listitem" style="--accent:#2c77cf;--soft:#e0efff;">
+        <span aria-hidden="true" class="color-story__image"></span>
+        <span class="color-story__label">Blue</span>
+      </a>
+      <a aria-label="Shop gold jewelry" class="color-story" href="categories/set-colors.html" role="listitem" style="--accent:#c68b24;--soft:#fff1c8;">
+        <span aria-hidden="true" class="color-story__image"></span>
+        <span class="color-story__label">Gold</span>
+      </a>
+      <a aria-label="Shop purple jewelry" class="color-story" href="categories/set-colors.html" role="listitem" style="--accent:#8d4fc3;--soft:#f0e2ff;">
+        <span aria-hidden="true" class="color-story__image"></span>
+        <span class="color-story__label">Purple</span>
+      </a>
+      <a aria-label="Shop black jewelry" class="color-story" href="categories/set-colors.html" role="listitem" style="--accent:#342f38;--soft:#e8e5ea;">
+        <span aria-hidden="true" class="color-story__image"></span>
+        <span class="color-story__label">Black</span>
+      </a>
+      <a aria-label="Shop multicolor jewelry" class="color-story" href="categories/set-colors.html" role="listitem" style="--accent:#e0642f;--soft:#fff0de;">
+        <span aria-hidden="true" class="color-story__image"></span>
+        <span class="color-story__label">Multicolor</span>
+      </a>
+    </div>
+  </div>
+</section>
 <header>
 <div class="hero">
 <div class="eyebrow">Indian jewelry • global glow</div>
