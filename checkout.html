@@ -2290,6 +2290,8 @@
     let currentStripeCurrency = 'USD';
     let profileSubmittedForPayment = false;
     let stripeCheckoutInProgress = false;
+    let stripeCheckoutAutoAttempted = false;
+    let stripeCheckoutRetryMessage = '';
 
     function hasCheckoutCart() {
       return Array.isArray(cart) && cart.some(item => item && item.name && Number(item.priceUSD) > 0);
@@ -2974,7 +2976,7 @@
         renderCustomerProfile();
         const checkoutNote = document.getElementById('checkoutProfileNote');
         if (checkoutNote) { checkoutNote.textContent = ''; checkoutNote.hidden = true; }
-        if (status) status.textContent = 'Thank you! Shipping information is verified. Now complete payment below.';
+        if (status) status.textContent = 'Thank you! Shipping information is verified. Opening secure Stripe Checkout...';
         renderStripeCheckout();
         document.getElementById('checkout')?.scrollIntoView({ behavior: shouldContinueToCheckout ? 'smooth' : 'smooth', block: 'start' });
         setTimeout(() => { if (status) status.textContent = ''; }, 6000);
@@ -3090,6 +3092,7 @@
       const paidTipUSD = getTipAmountUSD();
       const shipping = getProfileData();
       const member = getLoggedInMember();
+      stripeCheckoutAutoAttempted = true;
       stripeCheckoutInProgress = true;
       if (button) button.disabled = true;
       container.classList.add('payment-locked');
@@ -3125,10 +3128,28 @@
       } catch (error) {
         console.error('Stripe Checkout error:', error);
         stripeCheckoutInProgress = false;
-        container.classList.remove('payment-locked');
-        container.textContent = error?.message || 'Stripe Checkout could not load. Please try again.';
-        setTimeout(renderStripeCheckout, 4500);
+        stripeCheckoutRetryMessage = error?.message || 'Stripe Checkout could not load automatically.';
+        showStripeRetry(stripeCheckoutRetryMessage);
       }
+    }
+
+    function showStripeRetry(message) {
+      const container = document.getElementById('stripe-checkout-container');
+      if (!container) return;
+      container.classList.remove('payment-locked');
+      container.replaceChildren();
+      const note = document.createElement('p');
+      note.className = 'checkout-currency-note';
+      note.textContent = message || 'Stripe Checkout is ready to reopen.';
+      const button = document.createElement('button');
+      button.className = 'checkout-btn bloom-hover';
+      button.type = 'button';
+      button.textContent = 'Open Stripe Checkout again';
+      button.addEventListener('click', () => {
+        stripeCheckoutRetryMessage = '';
+        beginStripeCheckout(button);
+      });
+      container.append(note, button);
     }
 
     function renderStripeCheckout() {
@@ -3150,8 +3171,15 @@
       }
       currentStripeCurrency = getStripeCurrency();
       container.classList.remove('payment-locked');
-      container.innerHTML = '<button class="checkout-btn bloom-hover" id="stripeCheckoutButton" type="button">Continue to secure payment</button><p class="checkout-currency-note">You will complete payment on Stripe’s secure checkout page.</p>';
-      container.querySelector('#stripeCheckoutButton')?.addEventListener('click', event => beginStripeCheckout(event.currentTarget));
+      if (stripeCheckoutAutoAttempted) {
+        showStripeRetry(stripeCheckoutRetryMessage);
+        return;
+      }
+      stripeCheckoutAutoAttempted = true;
+      stripeCheckoutInProgress = true;
+      container.classList.add('payment-locked');
+      container.textContent = 'Opening secure Stripe Checkout...';
+      setTimeout(() => beginStripeCheckout(), 0);
     }
 
     function cleanStripeReturnUrl(parameter) {
@@ -3165,12 +3193,15 @@
       const cancelled = params.get('stripe_cancelled');
       const stripeSessionId = params.get('stripe_session_id');
       if (cancelled) {
+        stripeCheckoutAutoAttempted = true;
+        stripeCheckoutRetryMessage = 'Stripe Checkout was canceled. Your cart is still saved.';
         cleanStripeReturnUrl('stripe_cancelled');
         const checkoutNote = document.getElementById('checkoutProfileNote');
         if (checkoutNote) {
           checkoutNote.hidden = false;
           checkoutNote.textContent = 'Stripe Checkout was canceled. Your cart has been kept, and you can try again whenever you are ready.';
         }
+        showStripeRetry(stripeCheckoutRetryMessage);
         return;
       }
       if (!stripeSessionId) return;
@@ -3179,6 +3210,8 @@
       let pending = null;
       try { pending = JSON.parse(sessionStorage.getItem('globalRaniPendingStripeCheckout') || 'null'); } catch (error) {}
       if (!pending || pending.sessionId !== stripeSessionId) {
+        stripeCheckoutAutoAttempted = true;
+        stripeCheckoutInProgress = true;
         if (container) {
           container.classList.add('payment-locked');
           container.textContent = `Payment returned from Stripe, but this browser no longer has the order details. Please contact Global Rani with Stripe reference ${stripeSessionId}.`;
@@ -3187,6 +3220,7 @@
       }
 
       profileSubmittedForPayment = true;
+      stripeCheckoutAutoAttempted = true;
       stripeCheckoutInProgress = true;
       updateCheckoutStepVisibility();
       if (container) {
@@ -3247,8 +3281,8 @@
     enforceCheckoutAccess();
     loadCustomerProfile();
     loadRates();
-    renderStripeCheckout();
     completeStripeCheckoutFromReturn();
+    renderStripeCheckout();
   </script>
 <!-- Hidden looping website music. Browsers may require the first tap/click before audible autoplay is allowed. -->
 <audio autoplay="" id="globalRaniMusic" loop="" playsinline="" preload="auto">
