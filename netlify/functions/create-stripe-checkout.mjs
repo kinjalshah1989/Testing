@@ -98,6 +98,7 @@ export default async function handler(request) {
     const origin = siteOrigin(request);
     const params = new URLSearchParams({
       mode: 'payment',
+      'payment_method_types[0]': 'card',
       success_url: `${origin}/checkout.html?stripe_session_id={CHECKOUT_SESSION_ID}#checkout`,
       cancel_url: `${origin}/checkout.html?stripe_cancelled=1#checkout`,
       client_reference_id: reference,

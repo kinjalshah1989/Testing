@@ -1,6 +1,6 @@
 # Stripe Checkout setup
 
-The site now creates Stripe-hosted Checkout Sessions from Netlify Functions. Prices are resolved from the server-side product catalog, and a paid Stripe Session is verified before an order is saved or emailed.
+The site now creates Stripe-hosted Checkout Sessions from Netlify Functions. Prices are resolved from the server-side product catalog, and a paid Stripe Session is verified before an order is saved or emailed. Checkout Sessions are restricted to card payments and do not request Stripe Link.
 
 ## Required Netlify environment variables
 
