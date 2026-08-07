@@ -223,6 +223,45 @@ export async function queryDocumentsByStringFields(collection, filters) {
   return resultSets.flat();
 }
 
+export async function listDocuments(collection, { pageSize = 300, maxPages = 100 } = {}) {
+  const collectionId = String(collection || '').trim();
+  if (!/^[A-Za-z_][A-Za-z0-9_-]*$/.test(collectionId)) {
+    throw new Error('A valid Firestore collection is required.');
+  }
+
+  const safePageSize = Math.min(Math.max(Number(pageSize) || 300, 1), 300);
+  const safeMaxPages = Math.min(Math.max(Number(maxPages) || 100, 1), 100);
+  const headers = await authHeaders();
+  const documents = [];
+  let pageToken = '';
+
+  for (let page = 0; page < safeMaxPages; page += 1) {
+    const params = new URLSearchParams({ pageSize: String(safePageSize) });
+    if (pageToken) params.set('pageToken', pageToken);
+    const response = await fetch(`${baseDocumentsUrl()}/${encodeURIComponent(collectionId)}?${params}`, { headers });
+    if (!response.ok) {
+      throw new Error(`Firestore list failed (${response.status}): ${(await response.text()).slice(0, 240)}`);
+    }
+
+    const body = await response.json();
+    for (const document of body.documents || []) {
+      const id = decodeURIComponent(String(document.name || '').split('/').pop() || '');
+      documents.push({
+        id,
+        name: document.name,
+        createTime: document.createTime,
+        updateTime: document.updateTime,
+        ...decodeFields(document.fields || {})
+      });
+    }
+
+    pageToken = String(body.nextPageToken || '').trim();
+    if (!pageToken) return documents;
+  }
+
+  throw new Error('Firestore order history is too large to read safely in one request.');
+}
+
 export async function createDocument(collection, documentId, data) {
   const url = `${baseDocumentsUrl()}/${encodeURIComponent(collection)}?documentId=${encodeURIComponent(documentId)}`;
   const response = await fetch(url, {

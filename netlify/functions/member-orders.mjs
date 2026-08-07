@@ -1,5 +1,5 @@
 // Member order queries must use the same standard database as checkout.
-import { queryDocumentsByStringFields } from "../shared/firebase-orders.mjs";
+import { listDocuments, queryDocumentsByStringFields } from "../shared/firebase-orders.mjs";
 
 const FIREBASE_PROJECT_ID = "the-global-rani-website";
 
@@ -85,29 +85,44 @@ function normalizeEmail(value) {
   return String(value || "").trim().toLowerCase();
 }
 
+function orderContainsEmail(order, expectedEmail) {
+  const target = normalizeEmail(expectedEmail);
+  if (!target || !order || typeof order !== "object") return false;
+
+  const pending = [order];
+  const visited = new Set();
+  while (pending.length) {
+    const value = pending.pop();
+    if (!value || typeof value !== "object" || visited.has(value)) continue;
+    visited.add(value);
+
+    for (const [key, child] of Object.entries(value)) {
+      const emailField = String(key).replace(/[^a-z]/gi, "").toLowerCase().includes("email");
+      if (emailField && typeof child === "string" && normalizeEmail(child) === target) return true;
+      if (child && typeof child === "object") pending.push(child);
+    }
+  }
+  return false;
+}
+
 async function loadOrders({ uid, email, emailVerified }) {
   const memberEmail = String(email || "").trim();
   const normalizedMemberEmail = normalizeEmail(memberEmail);
-  const filters = [{ fieldPath: "firebaseUserId", value: uid }];
-  if (emailVerified) {
-    const emailValues = new Set([memberEmail, normalizedMemberEmail].filter(Boolean));
-    for (const value of emailValues) {
-      filters.push({ fieldPath: "customerEmail", value });
-      filters.push({ fieldPath: "payerEmail", value });
-    }
-    if (normalizedMemberEmail) {
-      filters.push({ fieldPath: "customerEmailNormalized", value: normalizedMemberEmail });
-      filters.push({ fieldPath: "payerEmailNormalized", value: normalizedMemberEmail });
-    }
+  let matches;
+  if (emailVerified && normalizedMemberEmail) {
+    // Older orders used several different email shapes. A server-side scan of
+    // the orders collection lets verified members recover that legacy history
+    // without exposing any other customer's documents to the browser.
+    matches = await listDocuments("orders");
+  } else {
+    matches = await queryDocumentsByStringFields("orders", [
+      { fieldPath: "firebaseUserId", value: uid }
+    ]);
   }
-
-  const matches = await queryDocumentsByStringFields("orders", filters);
   const uniqueOrders = new Map();
   for (const order of matches) {
     const belongsToMember = String(order.firebaseUserId || "").trim() === uid ||
-      (emailVerified &&
-        [order.customerEmail, order.payerEmail, order.customerEmailNormalized, order.payerEmailNormalized]
-          .some(value => normalizeEmail(value) === normalizedMemberEmail));
+      (emailVerified && orderContainsEmail(order, normalizedMemberEmail));
     if (!belongsToMember) continue;
 
     const key = String(order.orderNumber || order.stripeCheckoutSessionId || order.id || "").trim();

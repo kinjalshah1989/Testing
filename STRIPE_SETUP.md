@@ -36,7 +36,7 @@ Every paid checkout sends two separate Resend messages:
 
 No separate customer-recipient environment variable is needed. Both messages use `ORDER_FROM_EMAIL`, so its domain must be verified in Resend. Each message has its own idempotency key based on the Global Rani order number, and Firestore tracks `adminEmailStatus` and `customerEmailStatus` independently so Stripe webhook retries do not resend a message that already succeeded.
 
-The member Previous Orders page matches paid orders by Firebase user ID. After Firebase verifies that the member owns the email address, it also includes earlier guest purchases made with that email. Results from `customerEmail`, Stripe `payerEmail`, and normalized email fields are combined, deduplicated by order number, and displayed newest first. New accounts automatically receive a Firebase verification email, and existing members can use the Verify Email button in Order Summary.
+The member Previous Orders page matches paid orders by Firebase user ID. After Firebase verifies that the member owns the email address, the server securely checks the complete `(default) → orders` collection so it can also recover guest and legacy purchases whose email was stored with different capitalization or inside an older nested field. Only matching orders are returned to the member; results are deduplicated by order number and displayed newest first. New accounts automatically receive a Firebase verification email, and existing members can use the Verify Email button in Order Summary.
 
 ## Add the Stripe webhook
 
