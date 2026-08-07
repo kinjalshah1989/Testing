@@ -343,9 +343,11 @@
     .order-secondary-action { border:2px solid var(--ruby); background:#fff; color:var(--ruby); box-shadow:0 8px 20px rgba(158,21,51,.10); }
     .order-secondary-action[hidden] { display:none; }
     .previous-orders-title { margin:4px 0 14px; color:var(--ruby); font-family:Georgia,'Times New Roman',serif; font-size:1.45rem; }
-    .order-verify-btn,.order-refresh-btn,.order-logout-btn { border:0; border-radius:999px; padding:11px 18px; font:inherit; font-weight:900; cursor:pointer; }
+    .order-verify-btn,.order-recover-btn,.order-refresh-btn,.order-logout-btn { border:0; border-radius:999px; padding:11px 18px; font:inherit; font-weight:900; cursor:pointer; }
     .order-verify-btn { background:linear-gradient(135deg,var(--ruby),var(--gold)); color:#fff; }
     .order-verify-btn[hidden] { display:none; }
+    .order-recover-btn { background:linear-gradient(135deg,#7a5420,var(--gold)); color:#fff; }
+    .order-recover-btn[hidden] { display:none; }
     .order-refresh-btn { background:linear-gradient(135deg,var(--emerald),var(--gold)); color:#fff; }
     .order-logout-btn { background:#fff; color:var(--ruby); border:1px solid rgba(158,21,51,.28); }
     .order-list { display:grid; gap:18px; }
@@ -362,7 +364,7 @@
     .order-total { border-top:1px solid rgba(52,33,14,.12); padding-top:14px; display:flex; justify-content:space-between; gap:14px; font-weight:950; color:var(--dark); }
     .order-empty,.order-loading,.order-error { text-align:center; padding:28px 16px; border-radius:20px; background:#fffaf2; color:rgba(52,33,14,.78); font-weight:800; }
     .order-error { color:#a1122f; background:#fff0f2; }
-    @media(max-width:680px){ .order-summary-head{flex-direction:column}.order-summary-actions{width:100%}.order-verify-btn,.order-refresh-btn,.order-logout-btn{flex:1}.current-cart-item{grid-template-columns:50px 1fr}.current-cart-item img{width:50px;height:50px}.current-cart-item-price{grid-column:2}.current-cart-footer{align-items:stretch;flex-direction:column}.current-cart-actions{width:100%;flex-direction:column}.order-primary-action,.order-secondary-action{width:100%}.order-item{grid-template-columns:50px 1fr}.order-item img{width:50px;height:50px}.order-item-price{grid-column:2;text-align:left} }
+    @media(max-width:680px){ .order-summary-head{flex-direction:column}.order-summary-actions{width:100%}.order-verify-btn,.order-recover-btn,.order-refresh-btn,.order-logout-btn{flex:1}.current-cart-item{grid-template-columns:50px 1fr}.current-cart-item img{width:50px;height:50px}.current-cart-item-price{grid-column:2}.current-cart-footer{align-items:stretch;flex-direction:column}.current-cart-actions{width:100%;flex-direction:column}.order-primary-action,.order-secondary-action{width:100%}.order-item{grid-template-columns:50px 1fr}.order-item img{width:50px;height:50px}.order-item-price{grid-column:2;text-align:left} }
 
 
     .cart-tax-shipping-note{margin:5px 0 0;font-size:14px;color:#5d554d;line-height:1.4;}
@@ -427,6 +429,7 @@
         </div>
         <div class="order-summary-actions">
           <button class="order-verify-btn" type="button" id="verifyOrdersEmailBtn" hidden>Verify Email</button>
+          <button class="order-recover-btn" type="button" id="recoverOrdersBtn" hidden>Recover Missing Orders</button>
           <button class="order-refresh-btn" type="button" id="refreshOrdersBtn">Refresh Orders</button>
         </div>
       </div>
@@ -504,6 +507,7 @@
     const memberOrderList = document.getElementById("memberOrderList");
     const orderMemberEmail = document.getElementById("orderMemberEmail");
     const verifyOrdersEmailBtn = document.getElementById("verifyOrdersEmailBtn");
+    const recoverOrdersBtn = document.getElementById("recoverOrdersBtn");
     const refreshOrdersBtn = document.getElementById("refreshOrdersBtn");
     const ordersLogoutBtn = document.getElementById("ordersLogoutBtn");
     const profileMemberLink = document.getElementById("profileMemberLink");
@@ -888,9 +892,10 @@
         }
         const emailVerified = result?.member?.emailVerified === true;
         if (verifyOrdersEmailBtn) verifyOrdersEmailBtn.hidden = emailVerified;
+        if (recoverOrdersBtn) recoverOrdersBtn.hidden = !emailVerified;
         if (orderMemberEmail) {
           orderMemberEmail.textContent = emailVerified
-            ? `Signed in as ${user.email || "member"} · All orders using this verified email are included.`
+            ? `Signed in as ${user.email || "member"} · Verified. Use Recover Missing Orders if an older Stripe payment is absent.`
             : `Signed in as ${user.email || "member"} · Verify this email to include guest and earlier orders.`;
         }
         renderMemberOrders(result?.orders || []);
@@ -925,6 +930,37 @@
         alert(error?.message || "Could not send the verification email. Please try again.");
       } finally {
         verifyOrdersEmailBtn.disabled = false;
+      }
+    });
+
+    recoverOrdersBtn?.addEventListener("click", async () => {
+      const user = auth.currentUser;
+      if (!user) return;
+      recoverOrdersBtn.disabled = true;
+      if (refreshOrdersBtn) refreshOrdersBtn.disabled = true;
+      try {
+        const idToken = await getIdToken(user, true);
+        const response = await fetch('/api/recover-member-orders', {
+          method: 'POST',
+          headers: { Authorization: `Bearer ${idToken}` },
+          cache: 'no-store'
+        });
+        const result = await response.json().catch(() => ({}));
+        if (!response.ok || !result.ok) throw new Error(result.error || "Could not recover missing orders.");
+        if (Number(result.recovered) > 0) {
+          alert(`${result.recovered} missing order${Number(result.recovered) === 1 ? "" : "s"} recovered from Stripe.`);
+        } else if (Number(result.found) > 0) {
+          alert("Every paid Stripe order found for this email is already in Firebase.");
+        } else {
+          alert("No paid Global Rani Stripe orders were found for this verified email.");
+        }
+        await loadMemberOrders(user, true);
+      } catch (error) {
+        console.error("Stripe order recovery failed:", error);
+        alert(error?.message || "Could not recover missing orders. Please try again.");
+      } finally {
+        recoverOrdersBtn.disabled = false;
+        if (refreshOrdersBtn) refreshOrdersBtn.disabled = false;
       }
     });
 
@@ -994,6 +1030,7 @@
       setSessionMember(user);
       if (user) {
         if (verifyOrdersEmailBtn) verifyOrdersEmailBtn.hidden = user.emailVerified === true;
+        if (recoverOrdersBtn) recoverOrdersBtn.hidden = user.emailVerified !== true;
         if (signupRedirectPending) {
           if (accountPanel) accountPanel.style.display = "block";
           if (choiceScreen) choiceScreen.style.display = "none";
@@ -1019,6 +1056,7 @@
         }
       } else {
         if (verifyOrdersEmailBtn) verifyOrdersEmailBtn.hidden = true;
+        if (recoverOrdersBtn) recoverOrdersBtn.hidden = true;
         if (accountPanel) accountPanel.style.display = "block";
         if (orderSummarySection) orderSummarySection.classList.remove("show");
         if (memberOrderList) memberOrderList.innerHTML = '<div class="order-loading">Loading your orders…</div>';

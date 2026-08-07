@@ -27,7 +27,7 @@ function decodeFirebaseToken(idToken) {
   }
 }
 
-async function verifyFirebaseUser(idToken) {
+export async function verifyFirebaseUser(idToken) {
   const apiKey =
     process.env.FIREBASE_WEB_API_KEY ||
     ["AI", "zaSyBise9pqTYgQwmG-xOVZQ0-30j1EvcgDng"].join("");

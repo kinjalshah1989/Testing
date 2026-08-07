@@ -222,6 +222,16 @@ export async function fulfillPaidCheckout(session, stripeEventId = '') {
     paymentConfirmedAt: new Date().toISOString()
   });
 
+  if (existing.notificationSuppressed === true) {
+    await patchDocument('checkout_intents', reference, {
+      status: 'FULFILLED',
+      notificationEmailStatus: 'SKIPPED',
+      customerEmailStatus: 'SKIPPED',
+      fulfilledAt: new Date().toISOString()
+    });
+    return { orderNumber: order.orderNumber, alreadyProcessed: true, emailed: false, customerEmailed: false };
+  }
+
   const legacyAdminEmailSent = !existing.adminEmailStatus && existing.emailStatus === 'SENT';
   let adminEmailSent = existing.adminEmailStatus === 'SENT' || legacyAdminEmailSent;
   let customerEmailSent = existing.customerEmailStatus === 'SENT';
