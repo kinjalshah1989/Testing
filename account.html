@@ -599,6 +599,7 @@
     syncGuestCheckoutVisibility();
     window.addEventListener("pageshow", () => { syncGuestCheckoutVisibility(); renderCurrentCartSummary(); });
     window.addEventListener("focus", () => { syncGuestCheckoutVisibility(); renderCurrentCartSummary(); });
+    window.addEventListener("global-rani-currency-change", renderCurrentCartSummary);
 
     function getCurrentCart() {
       try {
@@ -616,7 +617,7 @@
 
       if (!hasItems) {
         currentCartItems.innerHTML = '<div class="current-cart-empty">Your cart is empty. Continue shopping to add your favorite jewelry.</div>';
-        currentCartTotal.textContent = 'Cart total: $0.00';
+        currentCartTotal.textContent = `Cart total: ${formatCurrentCartMoney(0)}`;
         orderPrimaryAction.textContent = 'Continue to Shop';
         orderPrimaryAction.href = 'index.html#shop';
         if (orderContinueShopping) orderContinueShopping.hidden = true;
@@ -627,11 +628,11 @@
         const quantity = Math.max(1, Number(item.quantity) || 1);
         const price = Number(item.priceUSD) || 0;
         const image = item.image ? `<img src="${escapeOrderHtml(item.image)}" alt="" loading="lazy" decoding="async">` : '<div></div>';
-        return `<div class="current-cart-item">${image}<div><div class="current-cart-item-name">${escapeOrderHtml(item.name)}</div><div class="current-cart-item-meta">Quantity: ${quantity}</div></div><div class="current-cart-item-price">${formatMoney(price * quantity, 'USD')}</div></div>`;
+        return `<div class="current-cart-item">${image}<div><div class="current-cart-item-name">${escapeOrderHtml(item.name)}</div><div class="current-cart-item-meta">Quantity: ${quantity}</div></div><div class="current-cart-item-price">${formatCurrentCartMoney(price * quantity)}</div></div>`;
       }).join('');
 
       const total = cart.reduce((sum, item) => sum + ((Number(item.priceUSD) || 0) * Math.max(1, Number(item.quantity) || 1)), 0);
-      currentCartTotal.textContent = `Cart total: ${formatMoney(total, 'USD')}`;
+      currentCartTotal.textContent = `Cart total: ${formatCurrentCartMoney(total)}`;
       orderPrimaryAction.textContent = 'Continue to Checkout';
       orderPrimaryAction.href = 'shipping.html';
       if (orderContinueShopping) orderContinueShopping.hidden = false;
@@ -828,6 +829,10 @@
       if (!Number.isFinite(amount)) return `${value || ""} ${currency || ""}`.trim();
       try { return new Intl.NumberFormat(undefined, { style: "currency", currency: currency || "USD" }).format(amount); }
       catch { return `$${amount.toFixed(2)}`; }
+    }
+
+    function formatCurrentCartMoney(value) {
+      return window.GlobalRaniCurrency?.formatUSD?.(value) || formatMoney(value, "USD");
     }
 
     function renderMemberOrders(orders) {
@@ -1160,6 +1165,6 @@
 </style>
 <a class="global-rani-whatsapp-help" href="https://wa.me/12164570935?text=Hello%20Global%20Rani%2C%20I%20need%20help." target="_blank" rel="noopener noreferrer" aria-label="Need help? Contact The Global Rani on WhatsApp"><span class="wa-icon" aria-hidden="true">◉</span><span>Need help?</span></a>
 
-  <script src="assets/global-rani-quality.js" defer></script>
+  <script src="assets/global-rani-quality.js?v=20260807-1" defer></script>
 </body>
 </html>

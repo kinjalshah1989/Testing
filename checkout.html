@@ -2636,17 +2636,10 @@
     function handleCurrencyChange(event) {
       const selectedValue = event.target.value;
       selectedCurrency = parseCurrencySelection(selectedValue);
-      localStorage.setItem('globalRaniCurrency', selectedValue);
-
-      // Update every visible amount immediately, then reload the home page so
-      // the selected country/currency is applied consistently across the site.
+      window.GlobalRaniCurrency?.setSelection?.(selectedValue);
+      try { localStorage.setItem('globalRaniCurrency', selectedValue); } catch (error) {}
       updateDisplayedPrices();
       renderStripeCheckout();
-
-      const destination = new URL('index.html', window.location.href);
-      destination.searchParams.set('currency', selectedCurrency.code);
-      destination.searchParams.set('refresh', Date.now().toString());
-      window.location.assign(destination.href);
     }
 
     const carouselState = {};
@@ -3227,10 +3220,19 @@
       }
     }
 
-    const savedCurrency = localStorage.getItem('globalRaniCurrency');
+    let savedCurrency = '';
+    try { savedCurrency = localStorage.getItem('globalRaniCurrency') || ''; } catch (error) {}
     if (savedCurrency && savedCurrency.split('|').length === 4) {
       selectedCurrency = parseCurrencySelection(savedCurrency);
     }
+    window.addEventListener('global-rani-currency-change', event => {
+      const selection = event.detail?.selection;
+      if (!selection?.code) return;
+      selectedCurrency = selection;
+      if (Number(event.detail?.rate) > 0) exchangeRates[selection.code] = Number(event.detail.rate);
+      updateDisplayedPrices();
+      renderStripeCheckout();
+    });
 
     loadCart();
     setupTipControls();
@@ -3569,6 +3571,6 @@
     }
   });
 </script>
-  <script src="assets/global-rani-quality.js" defer></script>
+  <script src="assets/global-rani-quality.js?v=20260807-1" defer></script>
 </body>
 </html>

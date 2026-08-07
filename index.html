@@ -5415,17 +5415,11 @@
     function handleCurrencyChange(event) {
       const selectedValue = event.target.value;
       selectedCurrency = parseCurrencySelection(selectedValue);
-      localStorage.setItem('globalRaniCurrency', selectedValue);
-
-      // Update every visible amount immediately, then reload the home page so
-      // the selected country/currency is applied consistently across the site.
+      // Update immediately and keep the choice for every other storefront page.
+      window.GlobalRaniCurrency?.setSelection?.(selectedValue);
+      try { localStorage.setItem('globalRaniCurrency', selectedValue); } catch (error) {}
       updateDisplayedPrices();
       renderStripeCheckout();
-
-      const destination = new URL('index.html', window.location.href);
-      destination.searchParams.set('currency', selectedCurrency.code);
-      destination.searchParams.set('refresh', Date.now().toString());
-      window.location.assign(destination.href);
     }
 
 
@@ -6155,7 +6149,8 @@
       container.querySelector('#stripeCheckoutButton')?.addEventListener('click', event => beginStripeCheckout(event.currentTarget));
     }
 
-    const savedCurrency = localStorage.getItem('globalRaniCurrency');
+    let savedCurrency = '';
+    try { savedCurrency = localStorage.getItem('globalRaniCurrency') || ''; } catch (error) {}
     const countryCurrency = document.getElementById('countryCurrency');
     if (savedCurrency && countryCurrency && [...countryCurrency.options].some(option => option.value === savedCurrency)) {
       countryCurrency.value = savedCurrency;
@@ -6164,6 +6159,18 @@
       selectedCurrency = parseCurrencySelection(countryCurrency.value);
       countryCurrency.addEventListener('change', handleCurrencyChange);
     }
+    window.addEventListener('global-rani-currency-change', event => {
+      const selection = event.detail?.selection;
+      if (!selection?.code) return;
+      selectedCurrency = selection;
+      if (Number(event.detail?.rate) > 0) exchangeRates[selection.code] = Number(event.detail.rate);
+      const selectionValue = `${selection.country}|${selection.code}|${selection.name}|${selection.symbol}`;
+      if (countryCurrency && [...countryCurrency.options].some(option => option.value === selectionValue)) {
+        countryCurrency.value = selectionValue;
+      }
+      updateDisplayedPrices();
+      renderStripeCheckout();
+    });
 
     loadCart();
     loadCustomerProfile();
@@ -6452,10 +6459,10 @@
     const input = chat.querySelector('[data-chat-input]');
 
     const products = {
-      jaipur: { name:'The Jaipur Pastel Set', price:'$65.00', image:'https://ik.imagekit.io/k0wpvuatq/jaipur-pastel-set-1.jpeg', id:'jaipur-pastel', reason:'Soft pastel kundan that feels elegant, romantic, and camera-ready.' },
-      noir: { name:'The Noir Pearl Empress Set', price:'$55.00', image:'https://ik.imagekit.io/k0wpvuatq/noir-pearl-empress-set-1.jpg', id:'noir-pearl-empress', reason:'Polished pearls and noir stones for sophisticated evening styling.' },
-      scarlet: { name:'The Scarlet Maharani Set', price:'$55.00', image:'https://ik.imagekit.io/k0wpvuatq/scarlet-maharani-set-3.jpg', id:'scarlet-maharani', reason:'A bold ruby choker that creates an unmistakable royal statement.' },
-      lotus: { name:'The Lotus Rajwadi Set', price:'$55.00', image:'https://ik.imagekit.io/k0wpvuatq/lotus-rajwadi-set-1.jpg', id:'lotus-rajwadi', reason:'Colorful heritage details with a festive, gift-worthy finish.' }
+      jaipur: { name:'The Jaipur Pastel Set', priceUSD:65, image:'https://ik.imagekit.io/k0wpvuatq/jaipur-pastel-set-1.jpeg', id:'jaipur-pastel', reason:'Soft pastel kundan that feels elegant, romantic, and camera-ready.' },
+      noir: { name:'The Noir Pearl Empress Set', priceUSD:55, image:'https://ik.imagekit.io/k0wpvuatq/noir-pearl-empress-set-1.jpg', id:'noir-pearl-empress', reason:'Polished pearls and noir stones for sophisticated evening styling.' },
+      scarlet: { name:'The Scarlet Maharani Set', priceUSD:55, image:'https://ik.imagekit.io/k0wpvuatq/scarlet-maharani-set-3.jpg', id:'scarlet-maharani', reason:'A bold ruby choker that creates an unmistakable royal statement.' },
+      lotus: { name:'The Lotus Rajwadi Set', priceUSD:55, image:'https://ik.imagekit.io/k0wpvuatq/lotus-rajwadi-set-1.jpg', id:'lotus-rajwadi', reason:'Colorful heritage details with a festive, gift-worthy finish.' }
     };
     const occasionMap = {
       wedding: ['scarlet','jaipur','lotus'],
@@ -6492,7 +6499,7 @@
     function addProductCard(product){
       const card = document.createElement('div');
       card.className = 'global-rani-shopper-card';
-      card.innerHTML = `<img src="${product.image}" alt="${product.name}" loading="lazy" decoding="async"><div class="global-rani-shopper-copy"><strong>${product.name}</strong><small>${product.reason}</small><div class="global-rani-shopper-price">${product.price}</div><div class="global-rani-shopper-actions"><button type="button" class="primary" data-view-product>View product</button><a class="secondary" href="ar-tryon.html?product=${encodeURIComponent(product.id)}">Try it on</a></div></div>`;
+      card.innerHTML = `<img src="${product.image}" alt="${product.name}" loading="lazy" decoding="async"><div class="global-rani-shopper-copy"><strong>${product.name}</strong><small>${product.reason}</small><div class="global-rani-shopper-price" data-global-rani-usd="${product.priceUSD}">$${product.priceUSD.toFixed(2)}</div><div class="global-rani-shopper-actions"><button type="button" class="primary" data-view-product>View product</button><a class="secondary" href="ar-tryon.html?product=${encodeURIComponent(product.id)}">Try it on</a></div></div>`;
       card.querySelector('[data-view-product]').addEventListener('click', () => {
         closeChat();
         document.getElementById('shop')?.scrollIntoView({ behavior:'smooth', block:'start' });
@@ -6749,7 +6756,7 @@
       const name=product.name||product.title||titleFromFile(product.fileName||src);
       const price=Number(product.price??product.priceUSD??defaultPriceFor(product.folder||src))||45;
       dialog.dataset.name=name;dialog.dataset.price=String(price);dialog.dataset.usdPrice=String(price);dialog.dataset.image=src;
-      modalImage.src=src;modalImage.alt=name;modalName.textContent=name;modalPrice.textContent=`$${price.toFixed(2)}`;
+      modalImage.src=src;modalImage.alt=name;modalName.textContent=name;modalPrice.dataset.globalRaniUsd=String(price);modalPrice.textContent=window.GlobalRaniCurrency?.formatUSD?.(price)||`$${price.toFixed(2)}`;
       modal.classList.add('open');modal.setAttribute('aria-hidden','false');document.body.style.overflow='hidden';modalClose?.focus();
     }
     modalClose?.addEventListener('click',closeInventoryProduct);
@@ -7110,7 +7117,7 @@
   });
 })();
 </script>
-  <script src="assets/global-rani-quality.js" defer></script>
+  <script src="assets/global-rani-quality.js?v=20260807-1" defer></script>
 </body>
 </html>
 <style>
