@@ -4328,6 +4328,205 @@
 
 .cart-tax-shipping-note{margin:4px 0 14px;font-size:14px;color:#4f4a45;line-height:1.4;}
 </style>
+<style id="new-arrivals-style">
+/* Wide, shop-style New Arrivals rail that replaces the former Royal Drops stage. */
+#shop.new-arrivals-section {
+  width: 100%;
+  max-width: none;
+  margin: 0;
+  padding: clamp(54px, 6vw, 88px) 0 clamp(62px, 7vw, 104px);
+  overflow: hidden;
+  perspective: none;
+  background: linear-gradient(180deg, rgba(255,255,255,.82), rgba(255,249,241,.88));
+  box-sizing: border-box;
+}
+#shop.new-arrivals-section::before,
+#shop.new-arrivals-section::after { display: none; }
+.new-arrivals-heading {
+  width: min(100%, 1680px);
+  margin: 0 auto;
+  padding: 0 clamp(18px, 3vw, 48px) 28px;
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 24px;
+}
+.new-arrivals-eyebrow {
+  display: block;
+  margin-bottom: 8px;
+  color: var(--ruby);
+  font-size: 12px;
+  font-weight: 900;
+  letter-spacing: .2em;
+  text-transform: uppercase;
+}
+.new-arrivals-heading h2 {
+  margin: 0;
+  color: #2f251d;
+  font-family: 'Cinzel', serif;
+  font-size: clamp(38px, 5vw, 66px);
+  font-weight: 600;
+  line-height: 1;
+}
+.new-arrivals-controls { display: flex; gap: 10px; }
+.new-arrivals-arrow {
+  width: 46px;
+  height: 46px;
+  display: grid;
+  place-items: center;
+  border: 1px solid rgba(158,21,51,.2);
+  border-radius: 50%;
+  background: #fff;
+  color: var(--ruby);
+  box-shadow: 0 10px 24px rgba(70,38,12,.12);
+  font-size: 29px;
+  line-height: 1;
+  cursor: pointer;
+}
+.new-arrivals-viewport { width: 100%; overflow: hidden; }
+.new-arrivals-track {
+  width: 100%;
+  display: flex;
+  align-items: flex-start;
+  gap: clamp(16px, 1.7vw, 28px);
+  padding: 0 clamp(18px, 3vw, 48px) 18px;
+  overflow-x: auto;
+  overflow-y: hidden;
+  scroll-snap-type: x mandatory;
+  scroll-padding-inline: clamp(18px, 3vw, 48px);
+  overscroll-behavior-inline: contain;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
+  box-sizing: border-box;
+}
+.new-arrivals-track::-webkit-scrollbar { display: none; }
+.product.new-arrival-card {
+  flex: 0 0 clamp(252px, 22.5vw, 344px);
+  min-width: 0;
+  margin: 0;
+  padding: 0;
+  overflow: visible;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+  opacity: 1;
+  transform: none;
+  transition: transform .25s ease;
+  isolation: auto;
+  scroll-snap-align: start;
+}
+.product.new-arrival-card::before,
+.product.new-arrival-card::after { display: none; }
+.product.new-arrival-card:hover { transform: translateY(-6px); }
+.new-arrival-photo {
+  position: relative;
+  width: 100%;
+  aspect-ratio: .76;
+  overflow: hidden;
+  border-radius: 999px 999px 26px 26px;
+  background: radial-gradient(circle at 50% 18%, #fffdf7, #f2e4d3 72%);
+  box-shadow: 0 18px 38px rgba(70,38,12,.13);
+}
+.new-arrival-photo img {
+  width: 100%;
+  height: 100%;
+  display: block;
+  object-fit: cover;
+  object-position: center;
+  transition: transform .55s ease;
+}
+.new-arrival-card:hover .new-arrival-photo img { transform: scale(1.035); }
+.new-arrival-badge {
+  position: absolute;
+  top: 17px;
+  right: 17px;
+  padding: 7px 13px;
+  border-radius: 999px;
+  background: linear-gradient(135deg, var(--ruby), #cb5070);
+  color: #fff;
+  box-shadow: 0 8px 20px rgba(158,21,51,.22);
+  font-size: 11px;
+  font-weight: 900;
+  letter-spacing: .1em;
+}
+.new-arrival-copy { padding: 17px 2px 0; }
+.new-arrival-category {
+  display: block;
+  margin-bottom: 7px;
+  color: #8c7565;
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: .14em;
+  text-transform: uppercase;
+}
+.product.new-arrival-card h3 {
+  min-height: 44px;
+  margin: 0;
+  color: #2d241e;
+  font-family: Inter, Arial, sans-serif;
+  font-size: 15px;
+  font-weight: 750;
+  line-height: 1.45;
+  text-transform: uppercase;
+}
+.new-arrival-detail {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  margin-top: 8px;
+  color: #7a685c;
+  font-size: 12px;
+}
+.new-arrival-detail span { color: var(--gold); }
+.new-arrival-buy-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  margin-top: 12px;
+}
+.new-arrival-price {
+  color: #241b15;
+  font-size: 18px;
+  font-weight: 800;
+}
+.new-arrival-add {
+  flex: 0 0 auto;
+  padding: 9px 16px;
+  border: 1px solid rgba(158,21,51,.25);
+  border-radius: 999px;
+  background: #fff;
+  color: var(--ruby);
+  font: inherit;
+  font-size: 12px;
+  font-weight: 900;
+  cursor: pointer;
+  box-shadow: 0 8px 18px rgba(70,38,12,.09);
+}
+.new-arrival-add:hover { background: var(--ruby); color: #fff; }
+.new-arrivals-status {
+  width: 100%;
+  min-height: 260px;
+  margin: 0;
+  display: grid;
+  place-items: center;
+  color: #7c6759;
+  font-weight: 700;
+  text-align: center;
+}
+@media (max-width: 700px) {
+  #shop.new-arrivals-section { padding-block: 44px 66px; }
+  .new-arrivals-heading { align-items: center; padding-bottom: 22px; }
+  .new-arrivals-eyebrow { font-size: 10px; letter-spacing: .16em; }
+  .new-arrivals-heading h2 { font-size: clamp(34px, 10vw, 48px); }
+  .new-arrivals-controls { gap: 7px; }
+  .new-arrivals-arrow { width: 39px; height: 39px; font-size: 25px; }
+  .new-arrivals-track { gap: 16px; }
+  .product.new-arrival-card { flex-basis: min(76vw, 312px); }
+  .new-arrival-photo { border-radius: 999px 999px 22px 22px; }
+}
+</style>
 <style>
 /* Final mobile sizing adjustment: make the hero and logo only slightly larger. */
 @media (max-width: 1180px) {
@@ -4784,7 +4983,7 @@
 </select>
 </div>
 <div class="profile-menu-wrap"><button aria-expanded="false" aria-haspopup="true" aria-label="Open member profile sign up and login" class="profile-icon-link profile-trigger bloom-hover" title="Sign up or log in" type="button"><span class="profile-caret-badge">⌄</span></button><div class="profile-dropdown" data-profile-dropdown="" role="menu"><a href="account.html" role="menuitem">Member Profile</a><a href="account.html?action=login" role="menuitem">Log in</a><button class="profile-dropdown-logout global-profile-logout" hidden="" role="menuitem" type="button">Log Out</button></div></div>
-<button aria-label="Open shopping bag" class="cart-btn cart-icon-btn bloom-hover" onclick="toggleCart()"><span aria-hidden="true" class="bag-icon"><svg focusable="false" role="img" viewbox="0 0 24 24"><path class="bag-body" d="M6.2 8.2h11.6l1.1 12.1H5.1L6.2 8.2Z"></path><path class="bag-handle" d="M8.8 9V6.9a3.2 3.2 0 0 1 6.4 0V9"></path><path class="bag-sparkle" d="M17.2 3.4l.45 1.15 1.15.45-1.15.45-.45 1.15-.45-1.15-1.15-.45 1.15-.45.45-1.15Z"></path></svg></span><span class="cart-count-badge" id="cartCount">0</span></button><div class="hamburger-menu-wrap"><button aria-expanded="false" aria-haspopup="true" aria-label="Open site menu" class="hamburger-toggle bloom-hover" type="button"><span></span><span></span><span></span></button><div class="hamburger-dropdown" role="menu"><span class="hamburger-menu-label">Menu</span><a href="#categories" role="menuitem">Shop by Collection</a><a href="#shop" role="menuitem">Royal Drops</a><a href="#ugc" role="menuitem">Videos</a><a href="#happy-customers" role="menuitem">Happy Customers</a><a href="behind-the-global-rani.html" role="menuitem">Behind The Global Rani</a></div></div>
+<button aria-label="Open shopping bag" class="cart-btn cart-icon-btn bloom-hover" onclick="toggleCart()"><span aria-hidden="true" class="bag-icon"><svg focusable="false" role="img" viewbox="0 0 24 24"><path class="bag-body" d="M6.2 8.2h11.6l1.1 12.1H5.1L6.2 8.2Z"></path><path class="bag-handle" d="M8.8 9V6.9a3.2 3.2 0 0 1 6.4 0V9"></path><path class="bag-sparkle" d="M17.2 3.4l.45 1.15 1.15.45-1.15.45-.45 1.15-.45-1.15-1.15-.45 1.15-.45.45-1.15Z"></path></svg></span><span class="cart-count-badge" id="cartCount">0</span></button><div class="hamburger-menu-wrap"><button aria-expanded="false" aria-haspopup="true" aria-label="Open site menu" class="hamburger-toggle bloom-hover" type="button"><span></span><span></span><span></span></button><div class="hamburger-dropdown" role="menu"><span class="hamburger-menu-label">Menu</span><a href="#categories" role="menuitem">Shop by Collection</a><a href="#shop" role="menuitem">New Arrivals</a><a href="#ugc" role="menuitem">Videos</a><a href="#happy-customers" role="menuitem">Happy Customers</a><a href="behind-the-global-rani.html" role="menuitem">Behind The Global Rani</a></div></div>
 </div>
 </nav>
 <section aria-label="Shop jewelry by color" class="shop-by-color" id="shop-by-colors">
@@ -4915,20 +5114,21 @@
 <button aria-label="Open Handcrafted Jewelry video" class="collection-video-card has-video" data-video-src="https://ik.imagekit.io/k0wpvuatq/ferris-handcrafted-jewellery.mp4" data-video-title="Handcrafted Jewelry" type="button"><video autoplay="" loop="" muted="" playsinline="" preload="metadata" src="https://ik.imagekit.io/k0wpvuatq/ferris-handcrafted-jewellery.mp4"></video></button>
 </div>
 </section>
-<section id="shop">
-<div class="section-title">
-<h2>Royal Drops</h2>
+<section aria-labelledby="newArrivalsTitle" class="new-arrivals-section" id="shop">
+<div class="new-arrivals-heading">
+<div>
+<span class="new-arrivals-eyebrow">Fresh from The Global Rani</span>
+<h2 id="newArrivalsTitle">New Arrivals</h2>
 </div>
-<div aria-label="Floating 3D Royal Drops product carousel" class="royal-drops-shell">
-<button aria-label="Previous Royal Drops product" class="royal-scroll-btn prev bloom-hover" onclick="rotateRoyalDrops(-1)" type="button">‹</button>
-<div class="royal-3d-stage" id="royalDropsStage">
-<div class="royal-drops-track" id="royalDropsTrack">
-<div class="royal-drops-loading" id="royalDropsLoading" role="status">Loading Royal Drops…</div>
-</div>
-<div aria-label="Royal Drops carousel controls" class="royal-3d-controls" id="royalDropsControls">
+<div aria-label="New Arrivals carousel controls" class="new-arrivals-controls">
+<button aria-label="Scroll New Arrivals left" class="new-arrivals-arrow bloom-hover" onclick="scrollNewArrivals(-1)" type="button">‹</button>
+<button aria-label="Scroll New Arrivals right" class="new-arrivals-arrow bloom-hover" onclick="scrollNewArrivals(1)" type="button">›</button>
 </div>
 </div>
-<button aria-label="Next Royal Drops product" class="royal-scroll-btn next bloom-hover" onclick="rotateRoyalDrops(1)" type="button">›</button>
+<div class="new-arrivals-viewport">
+<div aria-label="New jewelry arrivals" class="new-arrivals-track" id="newArrivalsTrack" role="list">
+<p class="new-arrivals-status" role="status">Loading new jewelry arrivals…</p>
+</div>
 </div>
 </section>
 <section aria-label="Inventory sale video showcase" class="inventory-editorial-section">
@@ -5659,77 +5859,81 @@
       return shuffled;
     }
 
-    function royalProductCard(product) {
-      const id = String(product.id || product.name || 'royal-drop').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
-      const name = String(product.name || 'Royal Drop');
+    function newArrivalProductCard(product) {
+      const name = String(product.name || 'Global Rani Jewelry');
       const price = Number(product.price) || 0;
-      const images = [...new Set((Array.isArray(product.images) ? product.images : [product.image]).filter(Boolean))].slice(0, 3);
-      const imageMarkup = images.map((url, index) => `<img alt="${escapeRoyalHtml(name)} photo ${index + 1}" class="${index === 0 ? 'active' : ''}" decoding="async" loading="lazy" src="${escapeRoyalHtml(url)}"/>`).join('');
-      const photoControls = images.length > 1 ? `
-        <button aria-label="Previous ${escapeRoyalHtml(name)} photo" class="carousel-btn royal-photo-btn prev bloom-hover" onclick="event.stopPropagation(); moveCarousel('${id}', -1)" type="button">‹</button>
-        <button aria-label="Next ${escapeRoyalHtml(name)} photo" class="carousel-btn royal-photo-btn next bloom-hover" onclick="event.stopPropagation(); moveCarousel('${id}', 1)" type="button">›</button>
-        <div aria-label="${escapeRoyalHtml(name)} carousel dots" class="carousel-dots">
-          ${images.map((_, index) => `<button aria-label="Show photo ${index + 1}" class="carousel-dot ${index === 0 ? 'active' : ''}" onclick="event.stopPropagation(); showCarousel('${id}', ${index})" type="button"></button>`).join('')}
-        </div>` : '';
-      const arImage = String(product.arImage || '').trim();
-      const tryOnButton = arImage
-        ? `<button class="royal-tryon-btn bloom-hover" data-royal-action="tryon" data-tryon-id="${id}" data-tryon-image="${escapeRoyalHtml(arImage)}" data-tryon-name="${escapeRoyalHtml(name)}" onclick="return openGlobalRaniTryOn(event, this)" type="button" aria-disabled="false">Try It On</button>`
-        : '<button class="royal-tryon-btn bloom-hover" disabled aria-disabled="true" type="button">Product not available to try-on</button>';
+      const category = String(product.category || 'Jewelry');
+      const image = String(product.image || (Array.isArray(product.images) ? product.images.find(Boolean) : '') || '');
 
-      return `<article class="product royal-3d-card bloom-hover" data-name="${escapeRoyalHtml(name)}" data-price="${price.toFixed(2)}" data-usd-price="${price.toFixed(2)}">
-        <div class="royal-3d-card-inner">
-          <div class="product-carousel royal-orbit-product" data-carousel="${id}">
-            ${imageMarkup}${photoControls}
-          </div>
-          <div class="royal-3d-info">
-            <h3>${escapeRoyalHtml(name)}</h3>
-            <div class="price converted-price" data-usd="${price.toFixed(2)}">$${price.toFixed(2)}</div>
-            <div class="royal-3d-actions">
-              <button class="add-btn bloom-hover" data-royal-action="cart" onclick="return handleRoyalAddToCart(event, this)" onpointerdown="return handleRoyalAddToCart(event, this)" type="button">Add to Cart</button>
-              ${tryOnButton}
-            </div>
+      return `<article class="product new-arrival-card visible" data-image="${escapeRoyalHtml(image)}" data-name="${escapeRoyalHtml(name)}" data-price="${price.toFixed(2)}" data-usd-price="${price.toFixed(2)}" role="listitem">
+        <div class="new-arrival-photo">
+          <img alt="${escapeRoyalHtml(name)}" decoding="async" loading="lazy" src="${escapeRoyalHtml(image)}"/>
+          <span class="new-arrival-badge">NEW</span>
+        </div>
+        <div class="new-arrival-copy">
+          <span class="new-arrival-category">${escapeRoyalHtml(category)}</span>
+          <h3>${escapeRoyalHtml(name)}</h3>
+          <div class="new-arrival-detail"><span aria-hidden="true">✦</span> Freshly added to the collection</div>
+          <div class="new-arrival-buy-row">
+            <strong class="converted-price new-arrival-price" data-usd="${price.toFixed(2)}">$${price.toFixed(2)}</strong>
+            <button aria-label="Add ${escapeRoyalHtml(name)} to cart" class="new-arrival-add bloom-hover" onclick="event.stopPropagation(); addToCart(this)" type="button">Add</button>
           </div>
         </div>
       </article>`;
     }
 
-    async function loadRandomRoyalDrops() {
-      const track = document.getElementById('royalDropsTrack');
-      const controls = document.getElementById('royalDropsControls');
-      if (!track || !controls) return;
-
-      try {
-        const response = await fetch('/api/jewelry-products?royalDrops=' + Date.now(), { headers: { Accept: 'application/json' } });
-        if (!response.ok) throw new Error('Royal Drops could not be loaded.');
-        const data = await response.json();
-        const available = (Array.isArray(data.products) ? data.products : []).filter(product =>
-          Number(product.price) >= 0 && (product.image || (Array.isArray(product.images) && product.images.length))
-        );
-        if (!available.length) throw new Error('No ImageKit products are available for Royal Drops.');
-
-        const selected = shuffleRoyalProducts(available).slice(0, Math.min(4, available.length));
-        track.innerHTML = selected.map(royalProductCard).join('');
-        controls.innerHTML = selected.map((product, index) =>
-          `<button aria-label="Show ${escapeRoyalHtml(product.name || 'Royal Drop')}" class="royal-3d-dot" onclick="setRoyalDrop(${index})" type="button"></button>`
-        ).join('');
-        royalDropIndex = 0;
-        updateDisplayedPrices();
-        updateRoyalDrops();
-        setupRoyalTryOnLinks();
-        setupRoyalActionButtons();
-
-        document.querySelectorAll('#royalDropsTrack .product').forEach(card => observer.observe(card));
-        document.querySelectorAll('#royalDropsTrack .product-carousel').forEach((carousel, index) => {
-          if (carousel.querySelectorAll('img').length > 1) {
-            window.setInterval(() => moveCarousel(carousel.dataset.carousel, 1), 4500 + (index * 500));
-          }
+    function interleaveNewArrivalGroups(groups) {
+      const output = [];
+      const seen = new Set();
+      const longest = Math.max(0, ...groups.map(group => group.length));
+      for (let productIndex = 0; productIndex < longest; productIndex += 1) {
+        groups.forEach(group => {
+          const product = group[productIndex];
+          if (!product) return;
+          const key = String(product.name || product.id || '').trim().toLowerCase();
+          if (!key || seen.has(key)) return;
+          seen.add(key);
+          output.push(product);
         });
+      }
+      return output;
+    }
+
+    async function loadNewArrivals() {
+      const track = document.getElementById('newArrivalsTrack');
+      if (!track) return;
+
+      const catalogUrls = ['/api/jewelry-products', '/api/earring-products', '/api/bangle-products'];
+      try {
+        const results = await Promise.allSettled(catalogUrls.map(async url => {
+          const response = await fetch(`${url}?newArrivals=${Date.now()}`, { headers: { Accept: 'application/json' } });
+          if (!response.ok) throw new Error(`${url} returned ${response.status}`);
+          const data = await response.json();
+          return (Array.isArray(data.products) ? data.products : []).filter(product =>
+            Number(product.price) >= 0 && (product.image || (Array.isArray(product.images) && product.images.length))
+          );
+        }));
+
+        const groups = results.filter(result => result.status === 'fulfilled').map(result => result.value);
+        const products = interleaveNewArrivalGroups(groups);
+        if (!products.length) throw new Error('No ImageKit jewelry products are available.');
+
+        track.innerHTML = products.map(newArrivalProductCard).join('');
+        updateDisplayedPrices();
       } catch (error) {
-        track.innerHTML = '<p class="royal-drops-loading">Royal Drops are temporarily unavailable. Please refresh the page.</p>';
-        controls.innerHTML = '';
+        track.innerHTML = '<p class="new-arrivals-status">New arrivals are temporarily unavailable. Please refresh the page.</p>';
         console.error(error);
       }
     }
+
+    function scrollNewArrivals(direction) {
+      const track = document.getElementById('newArrivalsTrack');
+      if (!track) return;
+      const firstCard = track.querySelector('.new-arrival-card');
+      const distance = firstCard ? firstCard.getBoundingClientRect().width + 22 : Math.min(window.innerWidth * .8, 360);
+      track.scrollBy({ left: direction * distance * 2, behavior: 'smooth' });
+    }
+    window.scrollNewArrivals = scrollNewArrivals;
 
     const observer = new IntersectionObserver(entries => {
       entries.forEach(entry => {
@@ -5737,9 +5941,7 @@
       });
     }, { threshold: .18 });
 
-    setupRoyalDropDrag();
-    loadRandomRoyalDrops();
-    setInterval(() => rotateRoyalDrops(1), 7000);
+    loadNewArrivals();
 
     const petalLayer = document.getElementById('petalLayer');
     const cursorFlowers = document.getElementById('cursorFlowers');
