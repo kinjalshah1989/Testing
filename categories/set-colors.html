@@ -408,6 +408,11 @@
   const requestedColor = COLOR_OPTIONS.includes(requestedColorValue) ? requestedColorValue : '';
   const isColorMode = Boolean(requestedColor);
   const colorTitle = requestedColor ? requestedColor.charAt(0).toUpperCase() + requestedColor.slice(1) : '';
+  // Color pages omit the internal ImageKit-folder description. The shared
+  // collection page keeps its explanatory copy.
+  if (isColorMode) {
+    document.getElementById('colorsPageDescription')?.remove();
+  }
   const API_URL = isColorMode
     ? `/api/color-products?color=${encodeURIComponent(requestedColor)}`
     : '/api/jewelry-products';
@@ -760,11 +765,7 @@
       if (title) title.textContent = pageName.toUpperCase();
       if (inventoryTitle) inventoryTitle.textContent = isColorMode ? `${pageName} Collection` : `${pageName} Colors`;
       if (eyebrow) eyebrow.textContent = isColorMode ? 'Shop by Color' : 'Complete Royal Collections';
-      if (pageDescription) {
-        pageDescription.textContent = isColorMode
-          ? `Discover jewelry loaded exclusively from the global-rani-${requestedColor} ImageKit folder.`
-          : 'Explore every available color for this Global Rani jewelry set.';
-      }
+      if (pageDescription) pageDescription.textContent = 'Explore every available color for this Global Rani jewelry set.';
       if (pageCta) pageCta.textContent = isColorMode ? `View ${colorTitle} Jewelry` : 'View Available Colors';
       document.title = isColorMode
         ? `${pageName} | The Global Rani`
