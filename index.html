@@ -4171,9 +4171,9 @@
 
   
 
-    /* Single editorial inventory sale video after Royal Drops */
+    /* Large editorial inventory mosaic after New Arrivals */
     .inventory-editorial-section {
-      width: min(72vw, 920px);
+      width: min(94vw, 1480px);
       margin: clamp(40px, 5vw, 76px) auto clamp(46px, 6vw, 90px);
       padding: 0;
       position: relative;
@@ -4181,8 +4181,8 @@
     .inventory-editorial-shell {
       position: relative;
       overflow: hidden;
-      aspect-ratio: 16 / 7.2;
-      min-height: 280px;
+      aspect-ratio: 16 / 8;
+      min-height: 480px;
       background: linear-gradient(135deg, #f7f1ea 0%, #e6ddd1 48%, #f3ede6 100%);
       border-radius: 6px;
       box-shadow: 0 22px 48px rgba(50, 28, 12, .14);
@@ -4290,12 +4290,12 @@
       .inventory-editorial-tile img { animation: none; }
     }
     @media (max-width: 1100px) {
-      .inventory-editorial-section { width: 78vw; }
+      .inventory-editorial-section { width: 92vw; }
       .inventory-editorial-copy { max-width: 38%; }
     }
     @media (max-width: 900px) {
-      .inventory-editorial-section { width: 86vw; }
-      .inventory-editorial-shell { aspect-ratio: 16 / 9; min-height: 290px; }
+      .inventory-editorial-section { width: 94vw; }
+      .inventory-editorial-shell { aspect-ratio: 16 / 10; min-height: 500px; }
       .inventory-editorial-tile.tile-a { left: 3%; top: 5%; width: 20%; height: 31%; }
       .inventory-editorial-tile.tile-b { left: 25%; top: 5%; width: 26%; height: 20%; }
       .inventory-editorial-tile.tile-c { left: 53%; top: 5%; width: 18%; height: 34%; }
@@ -4310,8 +4310,8 @@
       .inventory-editorial-tile.tile-l { left: 78%; top: 74%; width: 17%; height: 18%; }
     }
     @media (max-width: 640px) {
-      .inventory-editorial-section { width: 90vw; margin: 34px auto 52px; }
-      .inventory-editorial-shell { aspect-ratio: 4 / 5; min-height: 410px; }
+      .inventory-editorial-section { width: 96vw; margin: 34px auto 52px; }
+      .inventory-editorial-shell { aspect-ratio: 4 / 5; min-height: 520px; }
       .inventory-editorial-tile.tile-a { left: 5%; top: 4%; width: 31%; height: 18%; }
       .inventory-editorial-tile.tile-b { left: 40%; top: 4%; width: 54%; height: 14%; }
       .inventory-editorial-tile.tile-c { left: 7%; top: 25%; width: 24%; height: 20%; }
@@ -5126,8 +5126,8 @@
 </div>
 </div>
 <div class="new-arrivals-viewport">
-<div aria-label="New jewelry arrivals" class="new-arrivals-track" id="newArrivalsTrack" role="list">
-<p class="new-arrivals-status" role="status">Loading new jewelry arrivals…</p>
+<div aria-label="New jewelry set arrivals" class="new-arrivals-track" id="newArrivalsTrack" role="list">
+<p class="new-arrivals-status" role="status">Loading new jewelry sets…</p>
 </div>
 </div>
 </section>
@@ -5903,7 +5903,7 @@
       const track = document.getElementById('newArrivalsTrack');
       if (!track) return;
 
-      const catalogUrls = ['/api/jewelry-products', '/api/earring-products', '/api/bangle-products'];
+      const catalogUrls = ['/api/jewelry-products'];
       try {
         const results = await Promise.allSettled(catalogUrls.map(async url => {
           const response = await fetch(`${url}?newArrivals=${Date.now()}`, { headers: { Accept: 'application/json' } });
