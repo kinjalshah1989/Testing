@@ -107,9 +107,14 @@ function buildOrderData(session, pending, stripeEventId) {
 
 function resendSettings() {
   const apiKey = cleanText(process.env.RESEND_API_KEY || process.env.RESEND_KEY, 500);
-  const from = cleanText(process.env.ORDER_FROM_EMAIL || process.env.RESEND_FROM_EMAIL, 254);
-  if (!apiKey || !from) {
-    throw new Error('RESEND_API_KEY and ORDER_FROM_EMAIL must be configured with a Resend-verified sender domain.');
+  const from = cleanText(
+    process.env.ORDER_FROM_EMAIL ||
+    process.env.RESEND_FROM_EMAIL ||
+    'Global Rani <onboarding@resend.dev>',
+    254
+  );
+  if (!apiKey) {
+    throw new Error('RESEND_API_KEY must be configured.');
   }
   return { apiKey, from };
 }

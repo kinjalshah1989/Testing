@@ -26,17 +26,17 @@ The storefront is intentionally locked to Firebase project ID `the-global-rani-w
 ### Resend
 
 - `RESEND_API_KEY`: Resend API key.
-- `ORDER_FROM_EMAIL`: a sender on a domain verified in Resend, such as `The Global Rani <orders@yourdomain.com>`.
+- `ORDER_FROM_EMAIL`: the Resend sender. For initial testing use `Global Rani <onboarding@resend.dev>`. If this variable is omitted, the code uses that same testing sender automatically.
 - `ORDER_NOTIFICATION_EMAIL`: the Global Rani inbox that receives every paid-order email.
 
-Set `ORDER_NOTIFICATION_EMAIL` to a plain email address, for example `kinoretta@gmail.com`. `ORDER_FROM_EMAIL` is the sender and may include the store name, for example `The Global Rani <orders@your-verified-domain.com>`. The domain after `@` in `ORDER_FROM_EMAIL` must show as verified in Resend; without a verified sender domain, Resend will not deliver customer emails.
+Set `ORDER_NOTIFICATION_EMAIL` to a plain email address, for example `kinoretta@gmail.com`. During testing, set `ORDER_FROM_EMAIL` to `Global Rani <onboarding@resend.dev>`. Resend normally restricts this onboarding sender to the email address associated with the Resend account. Before emailing other customers, replace it with an address on a domain verified in Resend.
 
 Every paid checkout sends two separate Resend messages:
 
 - an internal order notification to `ORDER_NOTIFICATION_EMAIL`; and
 - a customer confirmation to the validated customer email collected by checkout or Stripe.
 
-No separate customer-recipient environment variable is needed. Both messages use `ORDER_FROM_EMAIL`, so its domain must be verified in Resend. Each message has its own idempotency key based on the Global Rani order number, and Firestore tracks `adminEmailStatus` and `customerEmailStatus` independently so Stripe webhook retries do not resend a message that already succeeded.
+No separate customer-recipient environment variable is needed. Both messages use `ORDER_FROM_EMAIL`. The onboarding sender is suitable for account-owner testing; customer delivery requires a verified sender domain. Each message has its own idempotency key based on the Global Rani order number, and Firestore tracks `adminEmailStatus` and `customerEmailStatus` independently so Stripe webhook retries do not resend a message that already succeeded.
 
 The member Previous Orders page matches paid orders by Firebase user ID. After Firebase verifies that the member owns the email address, the server securely checks the complete `(default) → orders` collection so it can also recover guest and legacy purchases whose email was stored with different capitalization or inside an older nested field. Only matching orders are returned to the member; results are deduplicated by order number and displayed newest first. New accounts automatically receive a Firebase verification email, and existing members can use the Verify Email button in Order Summary.
 
