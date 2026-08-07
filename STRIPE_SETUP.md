@@ -2,7 +2,7 @@
 
 The storefront creates Stripe-hosted Checkout Sessions from Netlify Functions. Before redirecting the customer to Stripe, the server saves a pending checkout in Firebase. Stripe then calls a signed webhook after payment; that webhook creates the paid order in Firebase and triggers Resend to email Global Rani. The customer is returned directly to `thank-you.html`, which safely checks the payment status on the server.
 
-The webhook is the source of truth. The order and email do not depend on the customer keeping the browser open or successfully returning from Stripe.
+The webhook is the source of truth. The order and email do not depend on the customer keeping the browser open or successfully returning from Stripe. When the customer does reach `thank-you.html`, its verified paid-session check also safely retries any merchant or customer email that is still missing.
 
 ## Required Netlify environment variables
 
@@ -28,6 +28,8 @@ The storefront is intentionally locked to Firebase project ID `the-global-rani-w
 - `RESEND_API_KEY`: Resend API key.
 - `ORDER_FROM_EMAIL`: a sender on a domain verified in Resend, such as `The Global Rani <orders@yourdomain.com>`.
 - `ORDER_NOTIFICATION_EMAIL`: the Global Rani inbox that receives every paid-order email.
+
+Set `ORDER_NOTIFICATION_EMAIL` to a plain email address, for example `kinoretta@gmail.com`. `ORDER_FROM_EMAIL` is the sender and may include the store name, for example `The Global Rani <orders@your-verified-domain.com>`. The domain after `@` in `ORDER_FROM_EMAIL` must show as verified in Resend; without a verified sender domain, Resend will not deliver customer emails.
 
 Every paid checkout sends two separate Resend messages:
 

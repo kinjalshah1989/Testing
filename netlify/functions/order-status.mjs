@@ -1,4 +1,4 @@
-import { orderStatusForSession } from '../shared/paid-order-fulfillment.mjs';
+import { fulfillPaidCheckout, orderStatusForSession } from '../shared/paid-order-fulfillment.mjs';
 
 const json = (body, status = 200) => new Response(JSON.stringify(body), {
   status,
@@ -37,6 +37,14 @@ export default async function handler(request) {
         status: session?.status || 'open',
         paymentStatus: session?.payment_status || 'unpaid'
       });
+    }
+    // Stripe webhooks remain the primary fulfillment path. This paid-session
+    // fallback safely completes or retries the same idempotent order emails
+    // when webhook delivery is delayed, while the customer is on Thank You.
+    try {
+      await fulfillPaidCheckout(session, `paid-return-${session.id}`);
+    } catch (error) {
+      console.error('Paid return fulfillment retry failed:', error?.message || error);
     }
     return json(await orderStatusForSession(session));
   } catch (error) {

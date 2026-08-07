@@ -7,7 +7,8 @@ export function cleanText(value, max = 500) {
 }
 
 function cleanEmail(value) {
-  const email = cleanText(value, 254);
+  const raw = cleanText(value, 254);
+  const email = raw.match(/<([^<>]+)>/)?.[1]?.trim() || raw;
   return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email) ? email : '';
 }
 
@@ -105,10 +106,10 @@ function buildOrderData(session, pending, stripeEventId) {
 }
 
 function resendSettings() {
-  const apiKey = cleanText(process.env.RESEND_API_KEY, 500);
-  const from = cleanText(process.env.ORDER_FROM_EMAIL, 254);
+  const apiKey = cleanText(process.env.RESEND_API_KEY || process.env.RESEND_KEY, 500);
+  const from = cleanText(process.env.ORDER_FROM_EMAIL || process.env.RESEND_FROM_EMAIL, 254);
   if (!apiKey || !from) {
-    throw new Error('RESEND_API_KEY and ORDER_FROM_EMAIL must be configured.');
+    throw new Error('RESEND_API_KEY and ORDER_FROM_EMAIL must be configured with a Resend-verified sender domain.');
   }
   return { apiKey, from };
 }
@@ -136,7 +137,12 @@ async function sendResendEmail({ apiKey, from, to, replyTo, subject, html, idemp
 
 export async function sendGlobalRaniOrderEmail(order) {
   const { apiKey, from } = resendSettings();
-  const to = cleanEmail(process.env.ORDER_NOTIFICATION_EMAIL);
+  const to = cleanEmail(
+    process.env.ORDER_NOTIFICATION_EMAIL ||
+    process.env.MERCHANT_NOTIFICATION_EMAIL ||
+    process.env.MERCHANT_EMAIL ||
+    process.env.RESEND_TO_EMAIL
+  );
   if (!to) throw new Error('ORDER_NOTIFICATION_EMAIL must be configured.');
 
   const items = order.items.map(item => `<li>${escapeHtml(item.name)} × ${item.quantity}</li>`).join('');
@@ -171,7 +177,12 @@ export async function sendCustomerOrderEmail(order) {
   const to = cleanEmail(order.customerEmail || order.payerEmail);
   if (!to) throw new Error('Customer email is missing from the paid checkout.');
 
-  const replyTo = cleanEmail(process.env.ORDER_NOTIFICATION_EMAIL);
+  const replyTo = cleanEmail(
+    process.env.ORDER_NOTIFICATION_EMAIL ||
+    process.env.MERCHANT_NOTIFICATION_EMAIL ||
+    process.env.MERCHANT_EMAIL ||
+    process.env.RESEND_TO_EMAIL
+  );
   const customerName = cleanText(order.customerName, 180);
   const greetingName = customerName.split(/\s+/)[0] || 'Rani';
   const items = order.items.map(item => `<li style="margin-bottom:6px">${escapeHtml(item.name)} × ${item.quantity}</li>`).join('');
@@ -341,6 +352,8 @@ export async function orderStatusForSession(session) {
     amount: displayAmount(Number(session.amount_total), currency),
     currency,
     emailStatus: cleanText(order?.emailStatus || pending?.notificationEmailStatus || 'PENDING', 30),
+    adminEmailStatus: cleanText(order?.adminEmailStatus || pending?.notificationEmailStatus || 'PENDING', 30),
+    customerEmailStatus: cleanText(order?.customerEmailStatus || pending?.customerEmailStatus || 'PENDING', 30),
     fulfillmentStatus: cleanText(order?.fulfillmentStatus || 'NEW', 30)
   };
 }
