@@ -89,6 +89,26 @@ export default async function handler(request) {
     }
 
     const items = await resolveCart(payload?.items);
+    const requestedPrices = new Map((Array.isArray(payload?.items) ? payload.items : []).map(item => [
+      cleanText(item?.name, 180).toLowerCase(),
+      Number(item?.priceUSD)
+    ]));
+    const priceChanged = items.some(item => {
+      const requested = requestedPrices.get(cleanText(item?.name, 180).toLowerCase());
+      return Number.isFinite(requested) && Math.abs(requested - Number(item.priceUSD)) > 0.005;
+    });
+    if (priceChanged) {
+      return json({
+        error: 'A product price was refreshed. Review the updated cart total, then continue to payment again.',
+        priceChanged: true,
+        items: items.map(item => ({
+          name: item.name,
+          priceUSD: item.priceUSD,
+          quantity: item.quantity,
+          image: item.image
+        }))
+      }, 409);
+    }
     const itemsUSD = pricedUSD(items, currency);
     const requestedTip = Math.max(0, Number(payload?.tipUSD) || 0);
     const maxTip = Math.max(25, itemsUSD * 0.30);

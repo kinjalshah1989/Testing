@@ -3066,10 +3066,20 @@
             checkoutMode: getCheckoutMode(),
             firebaseUserId: member?.uid || '',
             shipping,
-            items: paidCart.map(item => ({ name: item.name, quantity: getItemQuantity(item) }))
+            items: paidCart.map(item => ({ name: item.name, priceUSD: Number(item.priceUSD), quantity: getItemQuantity(item) }))
           })
         });
         const result = await response.json().catch(() => ({}));
+        if (response.status === 409 && result.priceChanged && Array.isArray(result.items)) {
+          result.items.forEach(authoritative => {
+            const existing = cart.find(item => getCartItemKey(item) === getCartItemKey(authoritative));
+            if (!existing || !Number.isFinite(Number(authoritative.priceUSD))) return;
+            existing.priceUSD = Number(authoritative.priceUSD);
+            if (authoritative.image) existing.image = authoritative.image;
+          });
+          saveCart();
+          renderCart();
+        }
         if (!response.ok || !result.url || !result.sessionId || !result.checkoutToken) {
           throw new Error(result.error || 'Secure Stripe Checkout could not be created.');
         }

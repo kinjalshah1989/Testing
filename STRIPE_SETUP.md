@@ -44,6 +44,10 @@ Previous Orders displays the image already saved with each Firestore item. For a
 
 Stripe test data and live data are separate. Recovery searches the mode selected by the deployed `STRIPE_SECRET_KEY`, so use the test key to recover test purchases and the live key to recover real purchases.
 
+Jewelry-set prices use one permanent Firestore product key from catalog display through Stripe Checkout. Variants inside an ImageKit collection are priced by the same collection ID used by `jewelry-products.mjs`; root-level sets use the same base ID. This prevents the cart and Stripe from resolving different permanent USD prices before currency conversion and the India discount.
+
+The browser sends its displayed USD unit price with the product name and quantity. The server still resolves the authoritative catalog price and refuses to create a Stripe Session if the browser has a stale price; the cart is refreshed and the customer reviews the corrected total before trying payment again. The browser-provided price is never trusted for charging.
+
 ## Add the Stripe webhook
 
 After deploying the site:

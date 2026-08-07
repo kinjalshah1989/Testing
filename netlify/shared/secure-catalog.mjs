@@ -45,10 +45,10 @@ async function imageKitCatalog() {
       const parent=filePath.slice(0,Math.max(0,filePath.lastIndexOf('/')));
       const relativeParent=parent.slice(cfg.path.length).replace(/^\/+|\/+$/g,'');
       const key=`${relativeParent.toLowerCase()}::${base.toLowerCase()}`;
-      if(!groups.has(key)) groups.set(key,{base,imgs:[]});
+      if(!groups.has(key)) groups.set(key,{base,relativeParent,imgs:[]});
       groups.get(key).imgs.push(f);
     }
-    for(const {base,imgs} of groups.values()){
+    for(const {base,relativeParent,imgs} of groups.values()){
       const first=imgs.sort((a,b)=>String(a.name).localeCompare(String(b.name)))[0];
       const md=first.customMetadata||{};
       if(['false','0','no','off','inactive'].includes(String(md.active??'true').toLowerCase())) continue;
@@ -56,7 +56,13 @@ async function imageKitCatalog() {
       let priceUSD = numeric(md.price ?? md.priceUSD, cfg.fallback);
       if (cfg.path === '/global-rani-products') {
         const range = configuredSetPriceRange();
-        priceUSD = await getOrCreatePermanentPrice(`${base}-set`, range.min, range.max);
+        // jewelry-products.mjs prices every variant by its collection ID.
+        // Checkout must use that same key or the cart and Stripe can resolve
+        // two different permanent prices for the identical product.
+        const priceId = relativeParent
+          ? relativeParent.split('/')[0].toLowerCase()
+          : base.toLowerCase();
+        priceUSD = await getOrCreatePermanentPrice(priceId, range.min, range.max);
       }
       out[normalize(name)]={name,priceUSD,image:String(first.url||'')};
     }
