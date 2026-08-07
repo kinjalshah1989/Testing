@@ -21,6 +21,8 @@ Use one complete service-account value:
 
 The service account needs permission to read and write Cloud Firestore. The code stores pending payments in `checkout_intents` and paid orders in `orders`.
 
+The storefront is intentionally locked to Firebase project ID `the-global-rani-website` and Firestore database ID `(default)`. Do not create or configure a named `globalrani` database for checkout data. The Firebase service account must belong to `the-global-rani-website`; a key from another project is rejected with a clear configuration error.
+
 ### Resend
 
 - `RESEND_API_KEY`: Resend API key.

@@ -1,3 +1,7 @@
+// Member order queries must use the same standard database as checkout.
+const FIREBASE_PROJECT_ID = "the-global-rani-website";
+const FIRESTORE_DATABASE_ID = "(default)";
+
 const json = (body, status = 200) =>
   new Response(JSON.stringify(body), {
     status,
@@ -62,10 +66,16 @@ async function verifyFirebaseUser(idToken) {
     );
   }
 
+  if (projectId !== FIREBASE_PROJECT_ID) {
+    throw new Error(
+      `Your login belongs to ${projectId}; expected ${FIREBASE_PROJECT_ID}. Please log out and log in again.`
+    );
+  }
+
   return {
     uid: user.localId,
     email: user.email || "",
-    projectId,
+    projectId: FIREBASE_PROJECT_ID,
   };
 }
 
@@ -109,7 +119,7 @@ function documentToOrder(document) {
 async function loadOrders({ uid, projectId, idToken }) {
   const url =
     `https://firestore.googleapis.com/v1/projects/` +
-    `${encodeURIComponent(projectId)}/databases/(default)/documents:runQuery`;
+    `${encodeURIComponent(projectId)}/databases/${FIRESTORE_DATABASE_ID}/documents:runQuery`;
 
   const response = await fetch(url, {
     method: "POST",

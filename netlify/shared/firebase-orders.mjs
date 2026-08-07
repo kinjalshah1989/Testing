@@ -1,5 +1,9 @@
 import crypto from 'node:crypto';
 
+// Paid orders and pending checkouts are always stored in `(default)`.
+const FIREBASE_PROJECT_ID = 'the-global-rani-website';
+const FIRESTORE_DATABASE_ID = '(default)';
+
 let tokenCache = { token: '', expiresAt: 0 };
 
 function parseServiceAccount(rawValue) {
@@ -43,7 +47,7 @@ function credentials() {
   const account = parseServiceAccount(process.env.FIREBASE_SERVICE_ACCOUNT_BASE64)
     || parseServiceAccount(process.env.FIREBASE_SERVICE_ACCOUNT_JSON)
     || {};
-  const projectId = String(account.project_id || account.projectId || process.env.FIREBASE_PROJECT_ID || '').trim();
+  const credentialProjectId = String(account.project_id || account.projectId || process.env.FIREBASE_PROJECT_ID || '').trim();
   const clientEmail = String(account.client_email || account.clientEmail || process.env.FIREBASE_CLIENT_EMAIL || '').trim();
   const candidates = [
     account.private_key,
@@ -58,7 +62,7 @@ function credentials() {
     privateKey = normalizePrivateKey(candidate);
     if (privateKey) break;
   }
-  return { projectId, clientEmail, privateKey };
+  return { projectId: FIREBASE_PROJECT_ID, credentialProjectId, clientEmail, privateKey };
 }
 
 function base64Url(value) {
@@ -67,7 +71,10 @@ function base64Url(value) {
 
 async function accessToken() {
   if (tokenCache.token && Date.now() < tokenCache.expiresAt) return tokenCache.token;
-  const { clientEmail, privateKey } = credentials();
+  const { credentialProjectId, clientEmail, privateKey } = credentials();
+  if (credentialProjectId && credentialProjectId !== FIREBASE_PROJECT_ID) {
+    throw new Error(`Firebase credentials belong to ${credentialProjectId}; expected ${FIREBASE_PROJECT_ID}.`);
+  }
   if (!clientEmail || !privateKey) throw new Error('Firebase server credentials are not configured.');
   const now = Math.floor(Date.now() / 1000);
   const header = base64Url(JSON.stringify({ alg: 'RS256', typ: 'JWT' }));
@@ -137,7 +144,7 @@ function encodeFields(data) {
 function baseDocumentsUrl() {
   const { projectId } = credentials();
   if (!projectId) throw new Error('Firebase project ID is not configured.');
-  return `https://firestore.googleapis.com/v1/projects/${encodeURIComponent(projectId)}/databases/(default)/documents`;
+  return `https://firestore.googleapis.com/v1/projects/${encodeURIComponent(projectId)}/databases/${FIRESTORE_DATABASE_ID}/documents`;
 }
 
 function documentUrl(collection, documentId) {

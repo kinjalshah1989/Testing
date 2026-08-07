@@ -1,5 +1,11 @@
 import crypto from 'node:crypto';
 
+// This storefront always uses the project's standard Firestore database.
+// Keep this fixed so a named database (for example, "globalrani") cannot be
+// selected accidentally through deployment configuration.
+const FIREBASE_PROJECT_ID = 'the-global-rani-website';
+const FIRESTORE_DATABASE_ID = '(default)';
+
 
 function parseServiceAccount(rawValue) {
   let value = String(rawValue || '').trim();
@@ -56,7 +62,7 @@ function getFirebaseCredentials() {
     parseServiceAccount(process.env.FIREBASE_SERVICE_ACCOUNT_JSON) ||
     {};
 
-  const projectId = String(
+  const credentialProjectId = String(
     serviceAccount.project_id || serviceAccount.projectId || process.env.FIREBASE_PROJECT_ID || ''
   ).trim();
   const clientEmail = String(
@@ -76,7 +82,7 @@ function getFirebaseCredentials() {
     privateKey = normalizePrivateKey(candidate);
     if (privateKey) break;
   }
-  return { projectId, clientEmail, privateKey };
+  return { projectId: FIREBASE_PROJECT_ID, credentialProjectId, clientEmail, privateKey };
 }
 
 const json = (body, status = 200) => new Response(JSON.stringify(body), {
@@ -139,7 +145,10 @@ function base64Url(input) {
 }
 
 async function getGoogleAccessToken() {
-  const { clientEmail, privateKey } = getFirebaseCredentials();
+  const { credentialProjectId, clientEmail, privateKey } = getFirebaseCredentials();
+  if (credentialProjectId && credentialProjectId !== FIREBASE_PROJECT_ID) {
+    throw new Error(`Firebase credentials belong to ${credentialProjectId}; expected ${FIREBASE_PROJECT_ID}.`);
+  }
   if (!clientEmail || !privateKey) throw new Error('Firebase server credentials are not configured.');
   const now = Math.floor(Date.now() / 1000);
   const header = base64Url(JSON.stringify({ alg: 'RS256', typ: 'JWT' }));
@@ -186,7 +195,7 @@ async function saveOrderToFirestore(orderId, orderData) {
   const { projectId } = getFirebaseCredentials();
   if (!projectId) throw new Error('Firebase project ID is not configured.');
   const token = await getGoogleAccessToken();
-  const url = `https://firestore.googleapis.com/v1/projects/${encodeURIComponent(projectId)}/databases/(default)/documents/orders?documentId=${encodeURIComponent(orderId)}`;
+  const url = `https://firestore.googleapis.com/v1/projects/${encodeURIComponent(projectId)}/databases/${FIRESTORE_DATABASE_ID}/documents/orders?documentId=${encodeURIComponent(orderId)}`;
   const fields = Object.fromEntries(Object.entries(orderData).map(([key, value]) => [key, firestoreValue(value)]));
   const response = await fetch(url, {
     method: 'POST',
