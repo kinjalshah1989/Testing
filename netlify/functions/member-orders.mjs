@@ -1,6 +1,7 @@
 // Member order queries must use the same standard database as checkout.
+import { queryDocumentsByStringFields } from "../shared/firebase-orders.mjs";
+
 const FIREBASE_PROJECT_ID = "the-global-rani-website";
-const FIRESTORE_DATABASE_ID = "(default)";
 
 const json = (body, status = 200) =>
   new Response(JSON.stringify(body), {
@@ -75,103 +76,47 @@ async function verifyFirebaseUser(idToken) {
   return {
     uid: user.localId,
     email: user.email || "",
+    emailVerified: user.emailVerified === true,
     projectId: FIREBASE_PROJECT_ID,
   };
 }
 
-function fromFirestore(value) {
-  if (!value || typeof value !== "object") return null;
-
-  if ("nullValue" in value) return null;
-  if ("stringValue" in value) return value.stringValue;
-  if ("integerValue" in value) return Number(value.integerValue);
-  if ("doubleValue" in value) return Number(value.doubleValue);
-  if ("booleanValue" in value) return Boolean(value.booleanValue);
-  if ("timestampValue" in value) return value.timestampValue;
-
-  if ("arrayValue" in value) {
-    return (value.arrayValue?.values || []).map(fromFirestore);
-  }
-
-  if ("mapValue" in value) {
-    return Object.fromEntries(
-      Object.entries(value.mapValue?.fields || {}).map(([key, child]) => [
-        key,
-        fromFirestore(child),
-      ])
-    );
-  }
-
-  return null;
+function normalizeEmail(value) {
+  return String(value || "").trim().toLowerCase();
 }
 
-function documentToOrder(document) {
-  const fields = document?.fields || {};
-
-  return Object.fromEntries(
-    Object.entries(fields).map(([key, value]) => [
-      key,
-      fromFirestore(value),
-    ])
-  );
-}
-
-async function loadOrders({ uid, projectId, idToken }) {
-  const url =
-    `https://firestore.googleapis.com/v1/projects/` +
-    `${encodeURIComponent(projectId)}/databases/${FIRESTORE_DATABASE_ID}/documents:runQuery`;
-
-  const response = await fetch(url, {
-    method: "POST",
-    headers: {
-      Authorization: `Bearer ${idToken}`,
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify({
-      structuredQuery: {
-        from: [
-          {
-            collectionId: "orders",
-          },
-        ],
-        where: {
-          fieldFilter: {
-            field: {
-              fieldPath: "firebaseUserId",
-            },
-            op: "EQUAL",
-            value: {
-              stringValue: uid,
-            },
-          },
-        },
-        limit: 100,
-      },
-    }),
-  });
-
-  if (!response.ok) {
-    const detail = await response.text();
-
-    if (response.status === 403) {
-      throw new Error(
-        "Previous Orders needs permission in Firebase Firestore Rules."
-      );
+async function loadOrders({ uid, email, emailVerified }) {
+  const memberEmail = String(email || "").trim();
+  const normalizedMemberEmail = normalizeEmail(memberEmail);
+  const filters = [{ fieldPath: "firebaseUserId", value: uid }];
+  if (emailVerified) {
+    const emailValues = new Set([memberEmail, normalizedMemberEmail].filter(Boolean));
+    for (const value of emailValues) {
+      filters.push({ fieldPath: "customerEmail", value });
+      filters.push({ fieldPath: "payerEmail", value });
     }
-
-    throw new Error(
-      `Could not load orders (${response.status}): ${detail.slice(0, 180)}`
-    );
+    if (normalizedMemberEmail) {
+      filters.push({ fieldPath: "customerEmailNormalized", value: normalizedMemberEmail });
+      filters.push({ fieldPath: "payerEmailNormalized", value: normalizedMemberEmail });
+    }
   }
 
-  const rows = await response.json();
+  const matches = await queryDocumentsByStringFields("orders", filters);
+  const uniqueOrders = new Map();
+  for (const order of matches) {
+    const belongsToMember = String(order.firebaseUserId || "").trim() === uid ||
+      (emailVerified &&
+        [order.customerEmail, order.payerEmail, order.customerEmailNormalized, order.payerEmailNormalized]
+          .some(value => normalizeEmail(value) === normalizedMemberEmail));
+    if (!belongsToMember) continue;
 
-  return rows
-    .filter((row) => row.document)
-    .map((row) => documentToOrder(row.document))
-    .sort((a, b) =>
-      String(b.createdAt || "").localeCompare(String(a.createdAt || ""))
-    );
+    const key = String(order.orderNumber || order.stripeCheckoutSessionId || order.id || "").trim();
+    if (key) uniqueOrders.set(key, order);
+  }
+
+  return [...uniqueOrders.values()].sort((a, b) =>
+    String(b.paidAt || b.createdAt || "").localeCompare(String(a.paidAt || a.createdAt || ""))
+  );
 }
 
 export default async function handler(request) {
@@ -199,13 +144,14 @@ export default async function handler(request) {
 
     const orders = await loadOrders({
       uid: member.uid,
-      projectId: member.projectId,
-      idToken,
+      email: member.email,
+      emailVerified: member.emailVerified,
     });
 
     return json({
       member: {
         email: member.email,
+        emailVerified: member.emailVerified,
       },
       orders,
     });

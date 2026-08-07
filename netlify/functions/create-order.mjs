@@ -1,4 +1,5 @@
 import crypto from 'node:crypto';
+import { sendCustomerOrderEmail, sendGlobalRaniOrderEmail } from '../shared/paid-order-fulfillment.mjs';
 
 // This storefront always uses the project's standard Firestore database.
 // Keep this fixed so a named database (for example, "globalrani") cannot be
@@ -213,45 +214,6 @@ async function saveOrderToFirestore(orderId, orderData) {
   return response.json();
 }
 
-function escapeHtml(value) {
-  return String(value ?? '').replace(/[&<>'"]/g, char => ({ '&':'&amp;', '<':'&lt;', '>':'&gt;', "'":'&#39;', '"':'&quot;' }[char]));
-}
-
-async function sendOrderEmail(orderData) {
-  const apiKey = process.env.RESEND_API_KEY;
-  const to = process.env.ORDER_NOTIFICATION_EMAIL;
-  const from = process.env.ORDER_FROM_EMAIL;
-  if (!apiKey || !to || !from) throw new Error('Order email environment variables are not configured.');
-  const items = orderData.items.map(item => `<li>${escapeHtml(item.name)} × ${item.quantity}</li>`).join('');
-  const address = orderData.shippingAddress;
-  const response = await fetch('https://api.resend.com/emails', {
-    method: 'POST',
-    headers: {
-      Authorization: `Bearer ${apiKey}`,
-      'Content-Type': 'application/json'
-    },
-    body: JSON.stringify({
-      from,
-      to: [to],
-      reply_to: orderData.customerEmail || undefined,
-      subject: `New Global Rani order ${orderData.orderNumber}`,
-      html: `
-        <h2>New paid Global Rani order</h2>
-        <p><strong>Order:</strong> ${escapeHtml(orderData.orderNumber)}</p>
-        <p><strong>Stripe payment:</strong> ${escapeHtml(orderData.stripePaymentIntentId)}</p>
-        <p><strong>Paid:</strong> ${escapeHtml(orderData.amount)} ${escapeHtml(orderData.currency)}</p>
-        <h3>Customer</h3>
-        <p>${escapeHtml(orderData.customerName)}<br>${escapeHtml(orderData.customerEmail)}<br>${escapeHtml(orderData.customerPhone)}</p>
-        <h3>Shipping address</h3>
-        <p>${escapeHtml(address.line1)}<br>${escapeHtml(address.line2)}<br>${escapeHtml(address.city)}, ${escapeHtml(address.state)} ${escapeHtml(address.postalCode)}<br>${escapeHtml(address.country)}</p>
-        <h3>Items</h3><ul>${items}</ul>
-        <p><strong>Notes:</strong> ${escapeHtml(orderData.notes)}</p>`
-    })
-  });
-  if (!response.ok) throw new Error(`Order email failed (${response.status}): ${(await response.text()).slice(0, 300)}`);
-  return response.json();
-}
-
 export default async function handler(request) {
   if (request.method !== 'POST') return json({ error: 'Method not allowed.' }, 405);
   try {
@@ -281,10 +243,14 @@ export default async function handler(request) {
       currency: cleanText(currency, 10),
       createdAt: new Date().toISOString(),
       fulfillmentStatus: 'NEW',
+      emailStatus: 'PENDING',
+      adminEmailStatus: 'PENDING',
+      customerEmailStatus: 'PENDING',
       firebaseUserId: cleanText(payload?.firebaseUserId, 160),
       checkoutMode: cleanText(payload?.checkoutMode, 20),
       customerName: cleanText(profile?.customerName, 180),
       customerEmail: cleanText(profile?.customerEmail, 254),
+      customerEmailNormalized: cleanText(profile?.customerEmail, 254).toLowerCase(),
       customerPhone: cleanText(profile?.customerPhone, 60),
       shippingAddress: {
         line1: cleanText(profile?.shippingAddress1, 240),
@@ -298,7 +264,8 @@ export default async function handler(request) {
       notes: cleanText(profile?.profileNotes, 1000),
       items: cleanItems(secureCheckout.items),
       tipUSD: Number(secureCheckout.tipUSD) || 0,
-      payerEmail: cleanText(session?.customer_details?.email || session?.customer_email, 254)
+      payerEmail: cleanText(session?.customer_details?.email || session?.customer_email, 254),
+      payerEmailNormalized: cleanText(session?.customer_details?.email || session?.customer_email, 254).toLowerCase()
     };
     if (!orderData.customerName || !orderData.customerEmail || !orderData.shippingAddress.line1 || !orderData.shippingAddress.city || !orderData.shippingAddress.postalCode) {
       return json({ error: 'Complete shipping details are required.' }, 400);
@@ -306,6 +273,7 @@ export default async function handler(request) {
 
     let stored = false;
     let emailed = false;
+    let customerEmailed = false;
     let alreadyStored = false;
     try {
       const saved = await saveOrderToFirestore(orderNumber, orderData);
@@ -316,16 +284,22 @@ export default async function handler(request) {
     }
     if (!alreadyStored) {
       try {
-        await sendOrderEmail(orderData);
+        await sendGlobalRaniOrderEmail(orderData);
         emailed = true;
       } catch (error) {
-        console.error('Order email failed:', error?.message || error);
+        console.error('Store order email failed:', error?.message || error);
+      }
+      try {
+        await sendCustomerOrderEmail(orderData);
+        customerEmailed = true;
+      } catch (error) {
+        console.error('Customer order email failed:', error?.message || error);
       }
     }
-    if (!stored && !emailed) {
+    if (!stored && !emailed && !customerEmailed) {
       return json({ error: 'Payment succeeded, but the order record could not be delivered. Please contact support with your Stripe Checkout session ID.' }, 500);
     }
-    return json({ ok: true, orderNumber, stored, emailed, alreadyStored, stripeSessionId, amountTotal, currency });
+    return json({ ok: true, orderNumber, stored, emailed, customerEmailed, alreadyStored, stripeSessionId, amountTotal, currency });
   } catch (error) {
     console.error('create-order error:', error);
     return json({ error: error?.message || 'Order could not be recorded.' }, 500);

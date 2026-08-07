@@ -1616,18 +1616,16 @@
 
 
 
-    /* FINAL mobile/smaller-screen header fix: one compact row, Ship-to below */
+    /* FINAL mobile/smaller-screen header fix: one compact row */
     @media (max-width: 1180px) {
       .nav-inner {
         display: grid !important;
         grid-template-columns: minmax(0, 1fr) auto auto auto !important;
-        grid-template-areas:
-          "brand menu profile bag"
-          "ship ship ship ship" !important;
+        grid-template-areas: "brand menu profile bag" !important;
         align-items: center !important;
         justify-items: stretch !important;
         column-gap: clamp(4px, 1.2vw, 9px) !important;
-        row-gap: 8px !important;
+        row-gap: 0 !important;
         padding: 9px clamp(6px, 1.8vw, 14px) !important;
       }
       .brand {
@@ -1724,22 +1722,6 @@
         height: clamp(16px, 4.8vw, 22px) !important;
         padding: 0 clamp(3px, 1.3vw, 6px) !important;
         font-size: clamp(9px, 2.6vw, 12px) !important;
-      }
-      .currency-switcher {
-        grid-area: ship !important;
-        grid-column: 1 / -1 !important;
-        order: 99 !important;
-        width: 100% !important;
-        max-width: 100% !important;
-        margin: 0 !important;
-        justify-content: center !important;
-        padding: 8px 10px !important;
-        min-height: 40px !important;
-      }
-      .currency-switcher select {
-        width: auto !important;
-        max-width: min(290px, 76vw) !important;
-        font-size: 13px !important;
       }
       .hamburger-dropdown,
       .profile-dropdown { right: 0 !important; left: auto !important; }
@@ -1921,27 +1903,6 @@
 <nav>
 <div class="nav-inner">
 <a aria-label="Return to The Global Rani homepage" class="brand" href="index.html"><img alt="The Global Rani logo" src="https://ik.imagekit.io/k0wpvuatq/global-rani-logo.png"/><span>The Global Rani</span></a>
-<div class="currency-switcher bloom-hover">
-<label for="countryCurrency">Ship to</label>
-<select aria-label="Choose country and currency" id="countryCurrency">
-<option value="US|USD|United States|$">🇺🇸 United States — USD</option>
-<option value="IN|INR|India|₹">🇮🇳 India — INR</option>
-<option value="GB|GBP|United Kingdom|£">🇬🇧 United Kingdom — GBP</option>
-<option value="CA|CAD|Canada|C$">🇨🇦 Canada — CAD</option>
-<option value="AU|AUD|Australia|A$">🇦🇺 Australia — AUD</option>
-<option value="EU|EUR|Europe|€">🇪🇺 Europe — EUR</option>
-<option value="AE|AED|UAE|د.إ">🇦🇪 UAE — AED</option>
-<option value="SG|SGD|Singapore|S$">🇸🇬 Singapore — SGD</option>
-<option value="NZ|NZD|New Zealand|NZ$">🇳🇿 New Zealand — NZD</option>
-<option value="JP|JPY|Japan|¥">🇯🇵 Japan — JPY</option>
-<option value="MY|MYR|Malaysia|RM">🇲🇾 Malaysia — MYR</option>
-<option value="PH|PHP|Philippines|₱">🇵🇭 Philippines — PHP</option>
-<option value="MX|MXN|Mexico|MX$">🇲🇽 Mexico — MXN</option>
-<option value="ZA|ZAR|South Africa|R">🇿🇦 South Africa — ZAR</option>
-<option value="SA|SAR|Saudi Arabia|﷼">🇸🇦 Saudi Arabia — SAR</option>
-<option value="QA|QAR|Qatar|ر.ق">🇶🇦 Qatar — QAR</option>
-</select>
-</div>
 <div class="profile-menu-wrap"><button aria-expanded="false" aria-haspopup="true" aria-label="Open member profile sign up and login" class="profile-icon-link profile-trigger bloom-hover" title="Sign up or log in" type="button"><span class="profile-caret-badge">⌄</span></button><div class="profile-dropdown" role="menu"><a class="profile-member-action" href="account.html" role="menuitem">Member Profile</a><a class="profile-login-action" href="account.html?action=login" role="menuitem">Log in</a><a class="profile-logout-action" href="#" id="checkoutLogoutLink" role="menuitem" style="display:none;">Log out</a></div></div>
 <button aria-label="Open shopping bag" class="cart-btn cart-icon-btn bloom-hover" onclick="toggleCart()"><span aria-hidden="true" class="bag-icon"><svg focusable="false" role="img" viewbox="0 0 24 24"><path class="bag-body" d="M6.2 8.2h11.6l1.1 12.1H5.1L6.2 8.2Z"></path><path class="bag-handle" d="M8.8 9V6.9a3.2 3.2 0 0 1 6.4 0V9"></path><path class="bag-sparkle" d="M17.2 3.4l.45 1.15 1.15.45-1.15.45-.45 1.15-.45-1.15-1.15-.45 1.15-.45.45-1.15Z"></path></svg></span><span class="cart-count-badge" id="cartCount">0</span></button>
 </div>
@@ -3257,13 +3218,8 @@
     }
 
     const savedCurrency = localStorage.getItem('globalRaniCurrency');
-    const countryCurrency = document.getElementById('countryCurrency');
-    if (savedCurrency && countryCurrency && [...countryCurrency.options].some(option => option.value === savedCurrency)) {
-      countryCurrency.value = savedCurrency;
-    }
-    if (countryCurrency) {
-      selectedCurrency = parseCurrencySelection(countryCurrency.value);
-      countryCurrency.addEventListener('change', handleCurrencyChange);
+    if (savedCurrency && savedCurrency.split('|').length === 4) {
+      selectedCurrency = parseCurrencySelection(savedCurrency);
     }
 
     loadCart();

@@ -79,10 +79,13 @@ function buildOrderData(session, pending, stripeEventId) {
     paidAt: Number(session.created) > 0 ? new Date(Number(session.created) * 1000).toISOString() : new Date().toISOString(),
     fulfillmentStatus: 'NEW',
     emailStatus: 'PENDING',
+    adminEmailStatus: 'PENDING',
+    customerEmailStatus: 'PENDING',
     firebaseUserId: cleanText(pending?.firebaseUserId, 180),
     checkoutMode: cleanText(pending?.checkoutMode, 30),
     customerName: cleanText(pending?.customerName, 180),
     customerEmail: cleanEmail(pending?.customerEmail),
+    customerEmailNormalized: cleanEmail(pending?.customerEmail).toLowerCase(),
     customerPhone: cleanText(pending?.customerPhone, 60),
     shippingAddress: {
       line1: cleanText(shipping?.line1, 240),
@@ -96,33 +99,56 @@ function buildOrderData(session, pending, stripeEventId) {
     notes: cleanText(pending?.notes, 1000),
     items: cleanItems(pending?.items),
     tipUSD: Number(pending?.tipUSD) || 0,
-    payerEmail: cleanEmail(session?.customer_details?.email || session?.customer_email)
+    payerEmail: cleanEmail(session?.customer_details?.email || session?.customer_email),
+    payerEmailNormalized: cleanEmail(session?.customer_details?.email || session?.customer_email).toLowerCase()
   };
 }
 
-async function sendGlobalRaniEmail(order) {
+function resendSettings() {
   const apiKey = cleanText(process.env.RESEND_API_KEY, 500);
-  const to = cleanEmail(process.env.ORDER_NOTIFICATION_EMAIL);
   const from = cleanText(process.env.ORDER_FROM_EMAIL, 254);
-  if (!apiKey || !to || !from) {
-    throw new Error('RESEND_API_KEY, ORDER_NOTIFICATION_EMAIL, and ORDER_FROM_EMAIL must be configured.');
+  if (!apiKey || !from) {
+    throw new Error('RESEND_API_KEY and ORDER_FROM_EMAIL must be configured.');
   }
+  return { apiKey, from };
+}
 
-  const items = order.items.map(item => `<li>${escapeHtml(item.name)} × ${item.quantity}</li>`).join('');
-  const address = order.shippingAddress;
+async function sendResendEmail({ apiKey, from, to, replyTo, subject, html, idempotencyKey }) {
   const response = await fetch('https://api.resend.com/emails', {
     method: 'POST',
     headers: {
       Authorization: `Bearer ${apiKey}`,
       'Content-Type': 'application/json',
-      'Idempotency-Key': `global-rani-order-${order.orderNumber}`
+      'Idempotency-Key': idempotencyKey
     },
     body: JSON.stringify({
       from,
       to: [to],
-      reply_to: order.customerEmail || order.payerEmail || undefined,
-      subject: `Paid Global Rani order ${order.orderNumber}`,
-      html: `
+      reply_to: replyTo || undefined,
+      subject,
+      html
+    })
+  });
+  const result = await response.json().catch(() => ({}));
+  if (!response.ok) throw new Error(result?.message || `Resend email failed (${response.status}).`);
+  return result;
+}
+
+export async function sendGlobalRaniOrderEmail(order) {
+  const { apiKey, from } = resendSettings();
+  const to = cleanEmail(process.env.ORDER_NOTIFICATION_EMAIL);
+  if (!to) throw new Error('ORDER_NOTIFICATION_EMAIL must be configured.');
+
+  const items = order.items.map(item => `<li>${escapeHtml(item.name)} × ${item.quantity}</li>`).join('');
+  const address = order.shippingAddress;
+  return sendResendEmail({
+    apiKey,
+    from,
+    to,
+    replyTo: cleanEmail(order.customerEmail || order.payerEmail),
+    subject: `Paid Global Rani order ${order.orderNumber}`,
+    idempotencyKey: `global-rani-order-${order.orderNumber}`,
+    html: `
         <div style="font-family:Arial,sans-serif;color:#34210e;line-height:1.55">
           <h1 style="color:#9e1533">New paid Global Rani order</h1>
           <p><strong>Order:</strong> ${escapeHtml(order.orderNumber)}</p>
@@ -137,11 +163,48 @@ async function sendGlobalRaniEmail(order) {
           <p><strong>Delivery notes:</strong> ${escapeHtml(order.deliveryNotes)}</p>
           <p><strong>Profile notes:</strong> ${escapeHtml(order.notes)}</p>
         </div>`
-    })
   });
-  const result = await response.json().catch(() => ({}));
-  if (!response.ok) throw new Error(result?.message || `Resend notification failed (${response.status}).`);
-  return result;
+}
+
+export async function sendCustomerOrderEmail(order) {
+  const { apiKey, from } = resendSettings();
+  const to = cleanEmail(order.customerEmail || order.payerEmail);
+  if (!to) throw new Error('Customer email is missing from the paid checkout.');
+
+  const replyTo = cleanEmail(process.env.ORDER_NOTIFICATION_EMAIL);
+  const customerName = cleanText(order.customerName, 180);
+  const greetingName = customerName.split(/\s+/)[0] || 'Rani';
+  const items = order.items.map(item => `<li style="margin-bottom:6px">${escapeHtml(item.name)} × ${item.quantity}</li>`).join('');
+  const address = order.shippingAddress;
+  return sendResendEmail({
+    apiKey,
+    from,
+    to,
+    replyTo,
+    subject: `Your Global Rani order ${order.orderNumber} is confirmed`,
+    idempotencyKey: `global-rani-customer-order-${order.orderNumber}`,
+    html: `
+      <div style="font-family:Arial,sans-serif;color:#34210e;line-height:1.6;max-width:640px;margin:0 auto">
+        <div style="padding:28px;border:1px solid #ead7b1;border-radius:20px;background:#fffaf2">
+          <p style="margin-top:0;color:#9e1533;font-weight:700">THE GLOBAL RANI</p>
+          <h1 style="color:#9e1533;margin-bottom:8px">Thank you for your order!</h1>
+          <p>Hi ${escapeHtml(greetingName)},</p>
+          <p>Your payment was successful and we have received your order. We will begin preparing it with care.</p>
+          <p><strong>Order number:</strong> ${escapeHtml(order.orderNumber)}<br>
+          <strong>Amount paid:</strong> ${escapeHtml(order.amount)} ${escapeHtml(order.currency)}</p>
+          <h2 style="font-size:18px;color:#7a5420">Your items</h2>
+          <ul>${items}</ul>
+          <h2 style="font-size:18px;color:#7a5420">Shipping to</h2>
+          <p>${escapeHtml(customerName)}<br>
+          ${escapeHtml(address.line1)}<br>
+          ${address.line2 ? `${escapeHtml(address.line2)}<br>` : ''}
+          ${escapeHtml(address.city)}, ${escapeHtml(address.state)} ${escapeHtml(address.postalCode)}<br>
+          ${escapeHtml(address.country)}</p>
+          <p>Keep this email for your records. If you have a question, reply to this message and include your order number.</p>
+          <p style="margin-bottom:0">With love,<br><strong>The Global Rani</strong></p>
+        </div>
+      </div>`
+  });
 }
 
 export async function fulfillPaidCheckout(session, stripeEventId = '') {
@@ -159,34 +222,98 @@ export async function fulfillPaidCheckout(session, stripeEventId = '') {
     paymentConfirmedAt: new Date().toISOString()
   });
 
-  if (!created.created && existing.emailStatus === 'SENT') {
-    return { orderNumber: order.orderNumber, alreadyProcessed: true, emailed: true };
+  const legacyAdminEmailSent = !existing.adminEmailStatus && existing.emailStatus === 'SENT';
+  let adminEmailSent = existing.adminEmailStatus === 'SENT' || legacyAdminEmailSent;
+  let customerEmailSent = existing.customerEmailStatus === 'SENT';
+
+  if (legacyAdminEmailSent) {
+    await patchDocument('orders', order.orderNumber, {
+      adminEmailStatus: 'SENT',
+      adminEmailId: cleanText(existing.emailId, 180),
+      adminEmailSentAt: cleanText(existing.emailSentAt, 80)
+    });
   }
 
-  try {
-    const email = await sendGlobalRaniEmail(order);
-    await patchDocument('orders', order.orderNumber, {
-      emailStatus: 'SENT',
-      emailId: cleanText(email?.id, 180),
-      emailSentAt: new Date().toISOString(),
-      emailError: ''
-    });
+  if (adminEmailSent && customerEmailSent) {
     await patchDocument('checkout_intents', reference, {
       status: 'FULFILLED',
       notificationEmailStatus: 'SENT',
+      customerEmailStatus: 'SENT',
       fulfilledAt: new Date().toISOString()
     });
-    return { orderNumber: order.orderNumber, alreadyProcessed: !created.created, emailed: true };
-  } catch (error) {
-    const message = cleanText(error?.message || error, 500);
-    try {
-      await patchDocument('orders', order.orderNumber, { emailStatus: 'FAILED', emailError: message });
-      await patchDocument('checkout_intents', reference, { notificationEmailStatus: 'FAILED', emailError: message });
-    } catch (updateError) {
-      console.error('Unable to record Resend failure:', updateError?.message || updateError);
-    }
-    throw error;
+    return { orderNumber: order.orderNumber, alreadyProcessed: true, emailed: true, customerEmailed: true };
   }
+
+  const failures = [];
+  if (!adminEmailSent) {
+    try {
+      const email = await sendGlobalRaniOrderEmail(order);
+      const sentAt = new Date().toISOString();
+      await patchDocument('orders', order.orderNumber, {
+        adminEmailStatus: 'SENT',
+        adminEmailId: cleanText(email?.id, 180),
+        adminEmailSentAt: sentAt,
+        emailId: cleanText(email?.id, 180),
+        emailSentAt: sentAt,
+        adminEmailError: ''
+      });
+      adminEmailSent = true;
+    } catch (error) {
+      const message = cleanText(error?.message || error, 500);
+      failures.push(`Store email: ${message}`);
+      await patchDocument('orders', order.orderNumber, { adminEmailStatus: 'FAILED', adminEmailError: message });
+    }
+  }
+
+  if (!customerEmailSent) {
+    try {
+      const email = await sendCustomerOrderEmail(order);
+      const sentAt = new Date().toISOString();
+      await patchDocument('orders', order.orderNumber, {
+        customerEmailStatus: 'SENT',
+        customerEmailId: cleanText(email?.id, 180),
+        customerEmailSentAt: sentAt,
+        customerEmailRecipient: cleanEmail(order.customerEmail || order.payerEmail),
+        customerEmailError: ''
+      });
+      customerEmailSent = true;
+    } catch (error) {
+      const message = cleanText(error?.message || error, 500);
+      failures.push(`Customer email: ${message}`);
+      await patchDocument('orders', order.orderNumber, { customerEmailStatus: 'FAILED', customerEmailError: message });
+    }
+  }
+
+  if (failures.length) {
+    const message = cleanText(failures.join(' | '), 500);
+    await patchDocument('orders', order.orderNumber, { emailStatus: 'FAILED', emailError: message });
+    await patchDocument('checkout_intents', reference, {
+      notificationEmailStatus: adminEmailSent ? 'SENT' : 'FAILED',
+      customerEmailStatus: customerEmailSent ? 'SENT' : 'FAILED',
+      emailError: message
+    });
+    throw new Error(message);
+  }
+
+  const allEmailsSentAt = new Date().toISOString();
+  await patchDocument('orders', order.orderNumber, {
+    emailStatus: 'SENT',
+    allEmailsSentAt,
+    emailError: ''
+  });
+  await patchDocument('checkout_intents', reference, {
+    status: 'FULFILLED',
+    notificationEmailStatus: 'SENT',
+    customerEmailStatus: 'SENT',
+    fulfilledAt: allEmailsSentAt,
+    emailError: ''
+  });
+  return {
+    orderNumber: order.orderNumber,
+    alreadyProcessed: !created.created,
+    emailed: true,
+    customerEmailed: true
+  };
 }
 
 export async function orderStatusForSession(session) {

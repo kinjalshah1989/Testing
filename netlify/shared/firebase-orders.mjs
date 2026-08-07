@@ -172,6 +172,57 @@ export async function getDocument(collection, documentId) {
   };
 }
 
+export async function queryDocumentsByStringFields(collection, filters) {
+  const collectionId = String(collection || '').trim();
+  if (!collectionId) throw new Error('Firestore collection is required.');
+
+  const safeFilters = (Array.isArray(filters) ? filters : [])
+    .map(filter => ({
+      fieldPath: String(filter?.fieldPath || '').trim(),
+      value: String(filter?.value || '').trim()
+    }))
+    .filter(filter => /^[A-Za-z_][A-Za-z0-9_]*$/.test(filter.fieldPath) && filter.value);
+  if (!safeFilters.length) return [];
+
+  const url = `${baseDocumentsUrl()}:runQuery`;
+  const headers = await authHeaders();
+  const resultSets = await Promise.all(safeFilters.map(async filter => {
+    const response = await fetch(url, {
+      method: 'POST',
+      headers,
+      body: JSON.stringify({
+        structuredQuery: {
+          from: [{ collectionId }],
+          where: {
+            fieldFilter: {
+              field: { fieldPath: filter.fieldPath },
+              op: 'EQUAL',
+              value: { stringValue: filter.value }
+            }
+          }
+        }
+      })
+    });
+    if (!response.ok) {
+      throw new Error(`Firestore query failed (${response.status}): ${(await response.text()).slice(0, 240)}`);
+    }
+    const rows = await response.json();
+    return rows.filter(row => row.document).map(row => {
+      const document = row.document;
+      const id = decodeURIComponent(String(document.name || '').split('/').pop() || '');
+      return {
+        id,
+        name: document.name,
+        createTime: document.createTime,
+        updateTime: document.updateTime,
+        ...decodeFields(document.fields || {})
+      };
+    });
+  }));
+
+  return resultSets.flat();
+}
+
 export async function createDocument(collection, documentId, data) {
   const url = `${baseDocumentsUrl()}/${encodeURIComponent(collection)}?documentId=${encodeURIComponent(documentId)}`;
   const response = await fetch(url, {

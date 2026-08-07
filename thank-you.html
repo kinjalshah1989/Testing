@@ -65,7 +65,6 @@
       <div class="details" id="orderDetails" hidden>
         <div class="detail"><span class="detail-label">Order number</span><span class="detail-value" id="orderNumber">—</span></div>
         <div class="detail"><span class="detail-label">Amount paid</span><span class="detail-value" id="amountPaid">—</span></div>
-        <div class="detail"><span class="detail-label">Order status</span><span class="detail-value" id="orderStatus">Processing</span></div>
       </div>
       <p class="notice" id="notificationStatus" hidden></p>
       <div class="actions" id="thankYouActions" hidden>
@@ -84,7 +83,6 @@
       const details = document.getElementById('orderDetails');
       const orderNumber = document.getElementById('orderNumber');
       const amountPaid = document.getElementById('amountPaid');
-      const orderStatus = document.getElementById('orderStatus');
       const notification = document.getElementById('notificationStatus');
       const actions = document.getElementById('thankYouActions');
       const support = document.getElementById('supportMessage');
@@ -119,12 +117,14 @@
         message.textContent = 'Your Stripe payment was successful. The Global Rani has received your paid order and will begin preparing it with care.';
         orderNumber.textContent = data.orderNumber || 'Processing';
         amountPaid.textContent = data.amount && data.currency ? `${data.amount} ${data.currency}` : 'Paid';
-        orderStatus.textContent = data.processing ? 'Processing' : 'Confirmed';
         details.hidden = false;
-        notification.hidden = false;
-        notification.textContent = data.emailStatus === 'SENT'
-          ? 'Global Rani has been notified by email through Resend.'
-          : 'Your payment is recorded. The email notification to Global Rani is being completed.';
+        if (data.emailStatus === 'SENT') {
+          notification.hidden = false;
+          notification.textContent = 'Global Rani has been notified by email through Resend.';
+        } else {
+          notification.hidden = true;
+          notification.textContent = '';
+        }
         support.textContent = 'Save your order number for your records. You may safely close this page.';
         actions.hidden = false;
         clearCompletedCheckout();

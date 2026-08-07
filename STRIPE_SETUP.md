@@ -29,7 +29,14 @@ The storefront is intentionally locked to Firebase project ID `the-global-rani-w
 - `ORDER_FROM_EMAIL`: a sender on a domain verified in Resend, such as `The Global Rani <orders@yourdomain.com>`.
 - `ORDER_NOTIFICATION_EMAIL`: the Global Rani inbox that receives every paid-order email.
 
-Resend requests use an idempotency key based on the Global Rani order number, so Stripe webhook retries do not send duplicate notifications.
+Every paid checkout sends two separate Resend messages:
+
+- an internal order notification to `ORDER_NOTIFICATION_EMAIL`; and
+- a customer confirmation to the validated customer email collected by checkout or Stripe.
+
+No separate customer-recipient environment variable is needed. Both messages use `ORDER_FROM_EMAIL`, so its domain must be verified in Resend. Each message has its own idempotency key based on the Global Rani order number, and Firestore tracks `adminEmailStatus` and `customerEmailStatus` independently so Stripe webhook retries do not resend a message that already succeeded.
+
+The member Previous Orders page matches paid orders by Firebase user ID. After Firebase verifies that the member owns the email address, it also includes earlier guest purchases made with that email. Results from `customerEmail`, Stripe `payerEmail`, and normalized email fields are combined, deduplicated by order number, and displayed newest first. New accounts automatically receive a Firebase verification email, and existing members can use the Verify Email button in Order Summary.
 
 ## Add the Stripe webhook
 
@@ -49,5 +56,7 @@ After deploying the site:
 4. Confirm the browser opens `thank-you.html` and shows the paid order number.
 5. Confirm Firestore contains the paid order under `orders` and its matching record under `checkout_intents`.
 6. Confirm `ORDER_NOTIFICATION_EMAIL` receives the Resend paid-order notification.
+7. Confirm the checkout/customer email receives the customer-friendly order confirmation.
+8. In Firestore, confirm the order has both `adminEmailStatus: SENT` and `customerEmailStatus: SENT`.
 
 Never place Stripe, Firebase, or Resend secrets in HTML, browser JavaScript, source control, or a return URL.
