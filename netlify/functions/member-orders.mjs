@@ -1,7 +1,9 @@
 // Member order queries must use the same standard database as checkout.
 import { listDocuments, queryDocumentsByStringFields } from "../shared/firebase-orders.mjs";
+import { getCatalog } from "../shared/secure-catalog.mjs";
 
 const FIREBASE_PROJECT_ID = "the-global-rani-website";
+const stripeProductImageCache = new Map();
 
 const json = (body, status = 200) =>
   new Response(JSON.stringify(body), {
@@ -105,6 +107,88 @@ function orderContainsEmail(order, expectedEmail) {
   return false;
 }
 
+function normalizeProductName(value) {
+  return String(value || "").trim().toLowerCase();
+}
+
+async function stripeProductImages(sessionId) {
+  const id = String(sessionId || "").trim();
+  const secretKey = String(process.env.STRIPE_SECRET_KEY || "").trim();
+  if (!secretKey || !/^cs_(?:test_|live_)?[A-Za-z0-9]+$/.test(id)) return new Map();
+  if (stripeProductImageCache.has(id)) return stripeProductImageCache.get(id);
+
+  const request = (async () => {
+    const images = new Map();
+    let startingAfter = "";
+    for (let page = 0; page < 10; page += 1) {
+      const url = new URL(`https://api.stripe.com/v1/checkout/sessions/${encodeURIComponent(id)}/line_items`);
+      url.searchParams.set("limit", "100");
+      url.searchParams.append("expand[]", "data.price.product");
+      if (startingAfter) url.searchParams.set("starting_after", startingAfter);
+      const response = await fetch(url, {
+        headers: { Authorization: `Bearer ${secretKey}` }
+      });
+      if (!response.ok) throw new Error(`Stripe product images failed (${response.status}).`);
+      const body = await response.json();
+      const lineItems = Array.isArray(body?.data) ? body.data : [];
+      for (const lineItem of lineItems) {
+        const product = lineItem?.price?.product && typeof lineItem.price.product === "object"
+          ? lineItem.price.product
+          : {};
+        const image = Array.isArray(product?.images)
+          ? String(product.images.find(value => /^https:\/\//i.test(String(value || ""))) || "")
+          : "";
+        const name = normalizeProductName(lineItem?.description);
+        if (name && image) images.set(name, image);
+      }
+      if (!body?.has_more) return images;
+      startingAfter = String(lineItems.at(-1)?.id || "");
+      if (!startingAfter) return images;
+    }
+    return images;
+  })().catch(error => {
+    console.warn("Previous order image lookup failed:", error?.message || error);
+    return new Map();
+  });
+
+  stripeProductImageCache.set(id, request);
+  return request;
+}
+
+async function enrichOrderImages(orders) {
+  if (!Array.isArray(orders) || !orders.some(order =>
+    Array.isArray(order?.items) && order.items.some(item => item?.name && !item?.image)
+  )) return orders;
+
+  const sessionIds = [...new Set(orders
+    .filter(order => Array.isArray(order?.items) && order.items.some(item => item?.name && !item?.image))
+    .map(order => String(order?.stripeCheckoutSessionId || "").trim())
+    .filter(Boolean))];
+  const stripeImages = new Map(await Promise.all(sessionIds.map(async id => [id, await stripeProductImages(id)])));
+
+  const unresolved = orders.some(order => Array.isArray(order?.items) && order.items.some(item => {
+    if (!item?.name || item?.image) return false;
+    return !stripeImages.get(String(order?.stripeCheckoutSessionId || "").trim())?.get(normalizeProductName(item.name));
+  }));
+  let catalog = {};
+  if (unresolved) {
+    try { catalog = await getCatalog(); }
+    catch (error) { console.warn("Previous order catalog image lookup failed:", error?.message || error); }
+  }
+
+  return orders.map(order => ({
+    ...order,
+    items: Array.isArray(order?.items) ? order.items.map(item => {
+      if (!item?.name || item?.image) return item;
+      const name = normalizeProductName(item.name);
+      const stripeImage = stripeImages.get(String(order?.stripeCheckoutSessionId || "").trim())?.get(name);
+      const catalogImage = String(catalog?.[name]?.image || "");
+      const image = stripeImage || (/^https:\/\//i.test(catalogImage) ? catalogImage : "");
+      return image ? { ...item, image } : item;
+    }) : []
+  }));
+}
+
 async function loadOrders({ uid, email, emailVerified }) {
   const memberEmail = String(email || "").trim();
   const normalizedMemberEmail = normalizeEmail(memberEmail);
@@ -157,11 +241,11 @@ export default async function handler(request) {
 
     const member = await verifyFirebaseUser(idToken);
 
-    const orders = await loadOrders({
+    const orders = await enrichOrderImages(await loadOrders({
       uid: member.uid,
       email: member.email,
       emailVerified: member.emailVerified,
-    });
+    }));
 
     return json({
       member: {

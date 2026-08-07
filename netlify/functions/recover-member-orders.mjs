@@ -70,6 +70,7 @@ async function listLineItems(sessionId) {
   for (let page = 0; page < 10; page += 1) {
     const body = await stripeGet(`/checkout/sessions/${encodeURIComponent(sessionId)}/line_items`, {
       limit: 100,
+      'expand[]': 'data.price.product',
       starting_after: startingAfter
     });
     const pageItems = Array.isArray(body?.data) ? body.data : [];
@@ -85,10 +86,14 @@ function recoveredItems(lineItems, currency) {
   return lineItems.slice(0, 100).map(item => {
     const quantity = Math.max(1, Math.min(99, Math.floor(Number(item?.quantity) || 1)));
     const unitMinor = Number(item?.price?.unit_amount);
+    const product = item?.price?.product && typeof item.price.product === 'object' ? item.price.product : {};
+    const image = Array.isArray(product?.images)
+      ? String(product.images.find(value => /^https:\/\//i.test(String(value || ''))) || '')
+      : '';
     return {
       name: cleanText(item?.description || 'Product', 180),
       quantity,
-      image: '',
+      image: cleanText(image, 1000),
       priceUSD: currency === 'USD' && Number.isFinite(unitMinor) ? unitMinor / 100 : null
     };
   }).filter(item => item.name);

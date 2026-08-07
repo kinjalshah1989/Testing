@@ -38,7 +38,9 @@ No separate customer-recipient environment variable is needed. Both messages use
 
 The member Previous Orders page matches paid orders by Firebase user ID. After Firebase verifies that the member owns the email address, the server securely checks the complete `(default) → orders` collection so it can also recover guest and legacy purchases whose email was stored with different capitalization or inside an older nested field. Only matching orders are returned to the member; results are deduplicated by order number and displayed newest first. New accounts automatically receive a Firebase verification email, and existing members can use the Verify Email button in Order Summary.
 
-If an older paid Stripe Checkout Session was never written to Firestore, the verified member can press **Recover Missing Orders** in Order Summary. The server asks Stripe only for completed Checkout Sessions belonging to that verified email, imports paid Global Rani sessions and their line items into `(default) → orders`, and then refreshes Previous Orders. Recovery is idempotent, does not create a new charge, and suppresses historical notification emails.
+Historical recovery asks Stripe only for completed Checkout Sessions belonging to a verified member email, imports paid Global Rani sessions and their line items into `(default) → orders`, and suppresses historical notification emails. The recovery endpoint is not shown as a customer-facing Order Summary control.
+
+Previous Orders displays the image already saved with each Firestore item. For a historical Stripe item whose saved image is blank, the member-orders function requests the expanded Stripe Product image and falls back to the ImageKit-backed product catalog by product name.
 
 Stripe test data and live data are separate. Recovery searches the mode selected by the deployed `STRIPE_SECRET_KEY`, so use the test key to recover test purchases and the live key to recover real purchases.
 
