@@ -3102,6 +3102,8 @@
           body: JSON.stringify({
             currency: currencyCode,
             tipUSD: paidTipUSD,
+            checkoutMode: getCheckoutMode(),
+            firebaseUserId: member?.uid || '',
             shipping,
             items: paidCart.map(item => ({ name: item.name, quantity: getItemQuantity(item) }))
           })

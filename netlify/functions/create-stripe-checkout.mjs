@@ -1,5 +1,6 @@
 import crypto from 'node:crypto';
 import { resolveCart, usdRate, pricedUSD } from '../shared/secure-catalog.mjs';
+import { createDocument, patchDocument } from '../shared/firebase-orders.mjs';
 
 const SUPPORTED_CURRENCIES = new Set([
   'AED', 'AUD', 'BRL', 'CAD', 'CHF', 'CNY', 'CZK', 'DKK', 'EUR', 'GBP',
@@ -99,7 +100,7 @@ export default async function handler(request) {
     const params = new URLSearchParams({
       mode: 'payment',
       'payment_method_types[0]': 'card',
-      success_url: `${origin}/checkout.html?stripe_session_id={CHECKOUT_SESSION_ID}#checkout`,
+      success_url: `${origin}/thank-you.html?session_id={CHECKOUT_SESSION_ID}`,
       cancel_url: `${origin}/checkout.html?stripe_cancelled=1#checkout`,
       client_reference_id: reference,
       submit_type: 'pay',
@@ -157,7 +158,61 @@ export default async function handler(request) {
       exp: Date.now() + 35 * 60 * 1000
     };
     const checkoutToken = sign(checkoutPayload);
-    const session = await createStripeSession(params);
+    const pendingCheckout = {
+      reference,
+      status: 'PENDING',
+      createdAt: new Date().toISOString(),
+      expiresAt: new Date(Date.now() + 35 * 60 * 1000).toISOString(),
+      currency,
+      amountMinor: amountTotal,
+      itemsUSD: Number(itemsUSD.toFixed(2)),
+      tipUSD: Number(tipUSD.toFixed(2)),
+      items: items.map(item => ({
+        name: cleanText(item.name, 180),
+        priceUSD: Number(item.priceUSD),
+        quantity: Number(item.quantity),
+        image: cleanText(item.image, 1000)
+      })),
+      firebaseUserId: cleanText(payload?.firebaseUserId, 180),
+      checkoutMode: cleanText(payload?.checkoutMode, 30),
+      customerName: cleanText(shipping?.customerName, 180),
+      customerEmail,
+      customerPhone: cleanText(shipping?.customerPhone, 60),
+      shippingAddress: {
+        line1: cleanText(shipping?.shippingAddress1, 240),
+        line2: cleanText(shipping?.shippingAddress2, 240),
+        city: cleanText(shipping?.shippingCity, 120),
+        state: cleanText(shipping?.shippingState, 120),
+        postalCode: cleanText(shipping?.shippingZip, 40),
+        country: cleanText(shipping?.shippingCountry, 120)
+      },
+      deliveryNotes: cleanText(shipping?.deliveryNotes, 1000),
+      notes: cleanText(shipping?.profileNotes, 1000),
+      stripeCheckoutSessionId: ''
+    };
+
+    const pending = await createDocument('checkout_intents', reference, pendingCheckout);
+    if (!pending.created) throw new Error('A duplicate secure checkout reference was generated. Please try again.');
+
+    let session;
+    try {
+      session = await createStripeSession(params);
+      await patchDocument('checkout_intents', reference, {
+        status: 'AWAITING_PAYMENT',
+        stripeCheckoutSessionId: session.id,
+        stripeSessionCreatedAt: new Date().toISOString()
+      });
+    } catch (error) {
+      try {
+        await patchDocument('checkout_intents', reference, {
+          status: 'SESSION_FAILED',
+          checkoutError: cleanText(error?.message || error, 500)
+        });
+      } catch (updateError) {
+        console.error('Unable to mark failed Stripe checkout:', updateError?.message || updateError);
+      }
+      throw error;
+    }
     return json({
       ok: true,
       sessionId: session.id,
