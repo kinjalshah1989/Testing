@@ -8,6 +8,8 @@ const SUPPORTED_CURRENCIES = new Set([
   'PLN', 'QAR', 'SAR', 'SEK', 'SGD', 'THB', 'TWD', 'USD', 'ZAR'
 ]);
 const ZERO_DECIMAL_CURRENCIES = new Set(['JPY']);
+const PROMO_CODE = '25RANI';
+const PROMO_DISCOUNT_RATE = 0.25;
 
 const json = (body, status = 200) => new Response(JSON.stringify(body), {
   status,
@@ -81,6 +83,8 @@ export default async function handler(request) {
     const payload = await request.json();
     const currency = String(payload?.currency || 'USD').trim().toUpperCase();
     if (!SUPPORTED_CURRENCIES.has(currency)) return json({ error: 'Unsupported currency.' }, 400);
+    const requestedDiscountCode = cleanText(payload?.discountCode, 40).toUpperCase();
+    const discountApplied = requestedDiscountCode === PROMO_CODE;
 
     const shipping = payload?.shipping || {};
     const customerEmail = cleanEmail(shipping?.customerEmail);
@@ -129,14 +133,17 @@ export default async function handler(request) {
       expires_at: String(Math.floor(Date.now() / 1000) + (30 * 60)),
       'payment_intent_data[description]': 'The Global Rani jewelry order',
       'payment_intent_data[metadata][store]': 'global_rani',
-      'payment_intent_data[metadata][checkout_reference]': reference
+      'payment_intent_data[metadata][checkout_reference]': reference,
+      'metadata[discount_code]': discountApplied ? PROMO_CODE : '',
+      'payment_intent_data[metadata][discount_code]': discountApplied ? PROMO_CODE : ''
     });
 
     params.set('customer_email', customerEmail);
 
     let amountTotal = 0;
     items.forEach((item, index) => {
-      const unitAmount = toMinorUnits(item.priceUSD * indiaDiscount * rate, currency);
+      const promoMultiplier = discountApplied ? (1 - PROMO_DISCOUNT_RATE) : 1;
+      const unitAmount = toMinorUnits(item.priceUSD * indiaDiscount * promoMultiplier * rate, currency);
       if (!Number.isSafeInteger(unitAmount) || unitAmount <= 0) throw new Error(`Invalid price for ${item.name}.`);
       amountTotal += unitAmount * item.quantity;
       params.set(`line_items[${index}][quantity]`, String(item.quantity));
@@ -175,6 +182,8 @@ export default async function handler(request) {
       amountTotal,
       itemsUSD: Number(itemsUSD.toFixed(2)),
       tipUSD: Number(tipUSD.toFixed(2)),
+      discountCode: discountApplied ? PROMO_CODE : '',
+      discountPercent: discountApplied ? 25 : 0,
       exp: Date.now() + 35 * 60 * 1000
     };
     const checkoutToken = sign(checkoutPayload);
@@ -187,6 +196,8 @@ export default async function handler(request) {
       amountMinor: amountTotal,
       itemsUSD: Number(itemsUSD.toFixed(2)),
       tipUSD: Number(tipUSD.toFixed(2)),
+      discountCode: discountApplied ? PROMO_CODE : '',
+      discountPercent: discountApplied ? 25 : 0,
       items: items.map(item => ({
         name: cleanText(item.name, 180),
         priceUSD: Number(item.priceUSD),
@@ -240,7 +251,9 @@ export default async function handler(request) {
       checkoutToken,
       amountTotal,
       total: fromMinorUnits(amountTotal, currency),
-      currency
+      currency,
+      discountApplied,
+      discountCode: discountApplied ? PROMO_CODE : ''
     });
   } catch (error) {
     console.error('create-stripe-checkout error:', error);

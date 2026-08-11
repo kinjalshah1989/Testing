@@ -841,6 +841,15 @@
     .quantity-value { min-width:22px; text-align:center; font-weight:900; color:var(--ink); }
 
     .tip-section { margin: 0 0 20px; padding: 18px; border: 1px solid rgba(185,133,47,.30); border-radius: 22px; background: rgba(255,255,255,.66); }
+    .discount-section { margin: 0 0 20px; padding: 18px; border: 1px solid rgba(185,133,47,.30); border-radius: 22px; background: rgba(255,255,255,.66); }
+    .discount-section h3 { margin: 0 0 10px; color: var(--ink); }
+    .discount-row { display:grid; grid-template-columns:1fr auto; gap:9px; }
+    .discount-input { width:100%; border:1px solid rgba(90,33,56,.18); border-radius:14px; padding:12px; font:inherit; background:#fff; text-transform:uppercase; }
+    .discount-apply { border:0; border-radius:14px; padding:11px 18px; font-weight:900; background:var(--ruby); color:#fff; }
+    .discount-message { margin:10px 0 0; min-height:20px; font-size:14px; font-weight:800; }
+    .discount-message.success { color:#287a3d; }
+    .discount-message.error { color:var(--ruby); }
+    .discount-total-line { display:flex; justify-content:space-between; gap:15px; margin:12px 0 0; font-weight:900; color:#287a3d; }
     .tip-section h3 { margin: 0 0 14px; color: var(--ink); }
     .tip-support-row { display:flex; align-items:center; gap:10px; padding:12px 0 14px; font-weight:700; }
     .tip-support-row input { width:19px; height:19px; accent-color: var(--ruby); }
@@ -2179,6 +2188,15 @@
 <div class="currency-note" id="rateNote">Prices shown in USD.</div>
 </div>
 <div>
+<div class="discount-section" id="discountSection">
+<h3>Discount code</h3>
+<div class="discount-row">
+<input aria-label="Discount code" autocomplete="off" class="discount-input" id="discountCodeInput" placeholder="Enter discount code" type="text"/>
+<button class="discount-apply bloom-hover" id="applyDiscountCode" type="button">Apply</button>
+</div>
+<p aria-live="polite" class="discount-message" id="discountMessage"></p>
+<div class="discount-total-line" hidden id="discountTotalLine"><span>25% discount</span><strong id="discountAmount">−$0.00</strong></div>
+</div>
 <div class="tip-section" id="tipSection">
 <h3>Add tip</h3>
 <label class="tip-support-row"><input checked="" id="tipEnabled" type="checkbox"/> <span>Show your support for The Global Rani team</span></label>
@@ -2507,6 +2525,54 @@
     }
 
 
+    const PROMO_CODE = '25RANI';
+    let appliedDiscountCode = '';
+
+    function hasPromoDiscount() {
+      return appliedDiscountCode === PROMO_CODE;
+    }
+
+    function getPromoDiscountUSD() {
+      return hasPromoDiscount() ? getCartPayableTotalBeforePromoUSD() * 0.25 : 0;
+    }
+
+    function getCartPayableTotalBeforePromoUSD() {
+      return cart.reduce((sum, item) => sum + (getDiscountedUSD(item.priceUSD) * getItemQuantity(item)), 0);
+    }
+
+    function updateDiscountUI() {
+      const line = document.getElementById('discountTotalLine');
+      const amount = document.getElementById('discountAmount');
+      if (line) line.hidden = !hasPromoDiscount();
+      if (amount) amount.textContent = `−${formatCurrency(rawConvertedAmount(getPromoDiscountUSD()))}`;
+    }
+
+    function applyDiscountCode() {
+      const input = document.getElementById('discountCodeInput');
+      const message = document.getElementById('discountMessage');
+      const code = String(input?.value || '').trim().toUpperCase();
+      if (code === PROMO_CODE) {
+        appliedDiscountCode = PROMO_CODE;
+        if (input) input.value = PROMO_CODE;
+        if (message) { message.textContent = '25% discount applied.'; message.className = 'discount-message success'; }
+      } else {
+        appliedDiscountCode = '';
+        if (message) { message.textContent = code ? 'That discount code is not valid.' : 'Enter a discount code.'; message.className = 'discount-message error'; }
+      }
+      updateDiscountUI();
+      updateTipUI();
+      renderCart();
+      renderStripeCheckout();
+    }
+
+    function setupDiscountControls() {
+      document.getElementById('applyDiscountCode')?.addEventListener('click', applyDiscountCode);
+      document.getElementById('discountCodeInput')?.addEventListener('keydown', event => {
+        if (event.key === 'Enter') { event.preventDefault(); applyDiscountCode(); }
+      });
+      updateDiscountUI();
+    }
+
     let selectedTipPercent = 0;
     let customTipUSD = 0;
     let usingCustomTip = false;
@@ -2585,13 +2651,13 @@
     }
 
     function getCartPayableTotalUSD() {
-      return cart.reduce((sum, item) => sum + (getDiscountedUSD(item.priceUSD) * getItemQuantity(item)), 0);
+      return Math.max(0, getCartPayableTotalBeforePromoUSD() - getPromoDiscountUSD());
     }
 
     function renderCart() {
       const totalUSD = getCartTotalUSD();
       const totalConverted = convertedAmount(totalUSD);
-      const checkoutTotalConverted = totalConverted + rawConvertedAmount(getTipAmountUSD());
+      const checkoutTotalConverted = rawConvertedAmount(getCartPayableTotalUSD()) + rawConvertedAmount(getTipAmountUSD());
       const html = cart.length ? cart.map((item, index) => {
         const quantity = getItemQuantity(item);
         const lineTotal = Number(item.priceUSD) * quantity;
@@ -2610,6 +2676,7 @@
       if (drawerTotal) drawerTotal.textContent = formatCurrency(totalConverted);
       if (cartCount) cartCount.textContent = getCartQuantityTotal();
       updateTipUI();
+      updateDiscountUI();
       updateCartCheckoutButton();
       updateCheckoutCurrencyNote();
     }
@@ -3056,6 +3123,7 @@
           body: JSON.stringify({
             currency: currencyCode,
             tipUSD: paidTipUSD,
+            discountCode: hasPromoDiscount() ? appliedDiscountCode : '',
             checkoutMode: getCheckoutMode(),
             firebaseUserId: member?.uid || '',
             shipping,
@@ -3236,6 +3304,7 @@
 
     loadCart();
     setupTipControls();
+    setupDiscountControls();
     enforceCheckoutAccess();
     loadCustomerProfile();
     loadRates();
