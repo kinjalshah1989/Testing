@@ -2195,7 +2195,7 @@
 <button class="discount-apply bloom-hover" id="applyDiscountCode" type="button">Apply</button>
 </div>
 <p aria-live="polite" class="discount-message" id="discountMessage"></p>
-<div class="discount-total-line" hidden id="discountTotalLine"><span>25% discount</span><strong id="discountAmount">−$0.00</strong></div>
+<div class="discount-total-line" hidden id="discountTotalLine"><span>Discount</span><strong id="discountAmount">−$0.00</strong></div>
 </div>
 <div class="tip-section" id="tipSection">
 <h3>Add tip</h3>
@@ -2554,7 +2554,7 @@
       if (code === PROMO_CODE) {
         appliedDiscountCode = PROMO_CODE;
         if (input) input.value = PROMO_CODE;
-        if (message) { message.textContent = '25% discount applied.'; message.className = 'discount-message success'; }
+        if (message) { message.textContent = 'Discount code applied.'; message.className = 'discount-message success'; }
       } else {
         appliedDiscountCode = '';
         if (message) { message.textContent = code ? 'That discount code is not valid.' : 'Enter a discount code.'; message.className = 'discount-message error'; }
