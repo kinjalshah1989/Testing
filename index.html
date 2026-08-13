@@ -5521,6 +5521,11 @@
     function addToCart(button) {
       const card = button && button.closest('.product, [data-name][data-price], [data-name][data-usd-price]');
       if (!card) return false;
+      if (card.dataset.available === 'false') {
+        button.disabled = true;
+        button.textContent = 'Sold Out';
+        return false;
+      }
       return addCartItem({
         name: card.dataset.name,
         priceUSD: Number(card.dataset.usdPrice || card.dataset.price),
@@ -5864,8 +5869,9 @@
       const price = Number(product.price) || 0;
       const category = String(product.category || 'Jewelry');
       const image = String(product.image || (Array.isArray(product.images) ? product.images.find(Boolean) : '') || '');
+      const available = product.available !== false;
 
-      return `<article class="product new-arrival-card visible" data-image="${escapeRoyalHtml(image)}" data-name="${escapeRoyalHtml(name)}" data-price="${price.toFixed(2)}" data-usd-price="${price.toFixed(2)}" role="listitem">
+      return `<article class="product new-arrival-card visible" data-available="${available}" data-image="${escapeRoyalHtml(image)}" data-name="${escapeRoyalHtml(name)}" data-price="${price.toFixed(2)}" data-usd-price="${price.toFixed(2)}" role="listitem">
         <div class="new-arrival-photo">
           <img alt="${escapeRoyalHtml(name)}" decoding="async" loading="lazy" src="${escapeRoyalHtml(image)}"/>
           <span class="new-arrival-badge">NEW</span>
@@ -5873,10 +5879,11 @@
         <div class="new-arrival-copy">
           <span class="new-arrival-category">${escapeRoyalHtml(category)}</span>
           <h3>${escapeRoyalHtml(name)}</h3>
+          <span class="product-availability ${available ? 'available' : 'sold-out'}">${available ? 'Available' : 'Sold Out'}</span>
           <div class="new-arrival-detail"><span aria-hidden="true">✦</span> Freshly added to the collection</div>
           <div class="new-arrival-buy-row">
             <strong class="converted-price new-arrival-price" data-usd="${price.toFixed(2)}">$${price.toFixed(2)}</strong>
-            <button aria-label="Add ${escapeRoyalHtml(name)} to cart" class="new-arrival-add bloom-hover" onclick="event.stopPropagation(); addToCart(this)" type="button">Add</button>
+            <button aria-label="${available ? 'Add' : 'Sold out'} ${escapeRoyalHtml(name)}" class="new-arrival-add bloom-hover" ${available ? 'onclick="event.stopPropagation(); addToCart(this)"' : 'data-sold-out="true" disabled'} type="button">${available ? 'Add' : 'Sold Out'}</button>
           </div>
         </div>
       </article>`;
@@ -6957,14 +6964,17 @@
       const product=productByImage.get(src)||{};
       const name=product.name||product.title||titleFromFile(product.fileName||src);
       const price=Number(product.price??product.priceUSD??defaultPriceFor(product.folder||src))||45;
-      dialog.dataset.name=name;dialog.dataset.price=String(price);dialog.dataset.usdPrice=String(price);dialog.dataset.image=src;
+      const available=product.available!==false;
+      dialog.dataset.name=name;dialog.dataset.price=String(price);dialog.dataset.usdPrice=String(price);dialog.dataset.image=src;dialog.dataset.available=String(available);
       modalImage.src=src;modalImage.alt=name;modalName.textContent=name;modalPrice.dataset.globalRaniUsd=String(price);modalPrice.textContent=window.GlobalRaniCurrency?.formatUSD?.(price)||`$${price.toFixed(2)}`;
+      modalAdd.disabled=!available;modalAdd.dataset.soldOut=available?'false':'true';modalAdd.textContent=available?'Add to Cart':'Sold Out';
       modal.classList.add('open');modal.setAttribute('aria-hidden','false');document.body.style.overflow='hidden';modalClose?.focus();
     }
     modalClose?.addEventListener('click',closeInventoryProduct);
     modal.addEventListener('click',event=>{if(event.target===modal)closeInventoryProduct();});
     document.addEventListener('keydown',event=>{if(event.key==='Escape'&&modal.classList.contains('open'))closeInventoryProduct();});
     modalAdd.addEventListener('click',()=>{
+      if(dialog.dataset.available==='false') return;
       const added = typeof addToCart === 'function' && addToCart(modalAdd);
       if (added) {
         modalAdd.textContent = 'Added ✓';

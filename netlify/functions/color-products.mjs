@@ -1,3 +1,5 @@
+import { decorateCatalogPayload } from '../shared/inventory-status.mjs';
+
 const ALLOWED_COLORS = new Set([
   'pink', 'red', 'green', 'blue', 'gold', 'purple', 'black', 'multicolor'
 ]);
@@ -10,9 +12,7 @@ function json(body, status = 200, cacheStatus = 'MISS', forceRefresh = false) {
     status,
     headers: {
       'Content-Type': 'application/json; charset=utf-8',
-      'Cache-Control': status === 200 && !forceRefresh
-        ? 'public, max-age=300, s-maxage=900, stale-while-revalidate=86400'
-        : 'no-store, max-age=0',
+      'Cache-Control': 'no-store, max-age=0',
       'X-Global-Rani-Cache': cacheStatus
     }
   });
@@ -130,7 +130,7 @@ export default async function handler(request) {
 
   const cached = memoryCache.get(color);
   if (!forceRefresh && cached && Date.now() - cached.savedAt < SERVER_CACHE_TTL) {
-    return json(cached.body, 200, 'HIT');
+    return json(await decorateCatalogPayload(cached.body, 'color'), 200, 'HIT');
   }
 
   try {
@@ -221,7 +221,7 @@ export default async function handler(request) {
       incompleteProducts
     };
     memoryCache.set(color, { savedAt: Date.now(), body: payload });
-    return json(payload, 200, 'MISS', forceRefresh);
+    return json(await decorateCatalogPayload(payload, 'color'), 200, 'MISS', forceRefresh);
   } catch (error) {
     return json({
       error: 'Color products could not be loaded.',

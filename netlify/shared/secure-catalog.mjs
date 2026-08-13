@@ -1,4 +1,5 @@
 import { getOrCreatePermanentPrice, configuredSetPriceRange } from './permanent-prices.mjs';
+import { applyAvailabilityToSecureCatalog } from './inventory-status.mjs';
 import staticCatalog from './static-catalog.json' with { type: 'json' };
 
 const folders = [
@@ -71,10 +72,11 @@ async function imageKitCatalog() {
 }
 
 export async function getCatalog(){
-  if(cache.catalog && Date.now()-cache.at<10*60*1000) return cache.catalog;
-  let dynamic={}; try{dynamic=await imageKitCatalog();}catch(e){console.warn(e.message)}
-  cache={at:Date.now(),catalog:{...staticCatalog,...dynamic}};
-  return cache.catalog;
+  if(!cache.catalog || Date.now()-cache.at>=10*60*1000){
+    let dynamic={}; try{dynamic=await imageKitCatalog();}catch(e){console.warn(e.message)}
+    cache={at:Date.now(),catalog:{...staticCatalog,...dynamic}};
+  }
+  return applyAvailabilityToSecureCatalog(cache.catalog);
 }
 
 export async function resolveCart(rawItems){
@@ -83,6 +85,7 @@ export async function resolveCart(rawItems){
   for(const raw of rawItems.slice(0,100)){
     const product=catalog[normalize(raw?.name)];
     if(!product) throw new Error(`Product is unavailable: ${String(raw?.name||'Unknown product').slice(0,80)}`);
+    if(product.available===false) throw new Error(`Product is sold out: ${String(product.name||raw?.name||'Unknown product').slice(0,80)}`);
     const quantity=Math.max(1,Math.min(20,Math.floor(Number(raw?.quantity)||1)));
     items.push({...product,quantity});
   }

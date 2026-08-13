@@ -1,4 +1,5 @@
 import { getOrCreatePermanentPrice, configuredSetPriceRange } from '../shared/permanent-prices.mjs';
+import { decorateCatalogPayload } from '../shared/inventory-status.mjs';
 const IMAGEKIT_FOLDER = '/global-rani-products';
 
 const SERVER_CACHE_TTL = 15 * 60 * 1000;
@@ -9,7 +10,7 @@ function json(body, status = 200, cacheStatus = 'MISS', forceRefresh = false) {
     status,
     headers: {
       'Content-Type': 'application/json; charset=utf-8',
-      'Cache-Control': status === 200 && !forceRefresh ? 'public, max-age=300, s-maxage=900, stale-while-revalidate=86400' : 'no-store, max-age=0',
+      'Cache-Control': 'no-store, max-age=0',
       'X-Global-Rani-Cache': cacheStatus
     }
   });
@@ -125,7 +126,7 @@ function parseCarouselFilename(filename) {
 export default async function handler(request) {
   const forceRefresh = (() => { try { return new URL(request.url).searchParams.get('refresh') === '1'; } catch { return false; } })();
   if (!forceRefresh && memoryCache && Date.now() - memoryCache.savedAt < SERVER_CACHE_TTL) {
-    return json(memoryCache.body, 200, 'HIT');
+    return json(await decorateCatalogPayload(memoryCache.body, 'jewelry'), 200, 'HIT');
   }
   try {
    const privateKey = process.env.IMAGEKIT_PRIVATE_KEY;
@@ -253,7 +254,7 @@ export default async function handler(request) {
       incompleteProducts
     };
     memoryCache = { savedAt: Date.now(), body: payload };
-    return json(payload, 200, 'MISS', forceRefresh);
+    return json(await decorateCatalogPayload(payload, 'jewelry'), 200, 'MISS', forceRefresh);
   } catch (error) {
     return json({
       error: 'Jewelry products could not be loaded.',

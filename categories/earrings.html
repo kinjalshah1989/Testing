@@ -445,7 +445,8 @@
       boxGif: raw.boxGif || '',
       collectionId: raw.collectionId || raw.id || id,
       collectionName: raw.collectionName || raw.name || displayName(id),
-      colorCount: Number(raw.colorCount || 1)
+      colorCount: Number(raw.colorCount || 1),
+      available: raw.available !== false
     };
   }
 
@@ -473,9 +474,10 @@
       <span class="tag">${safe(product.category)}</span>
       <h3>${safe(product.name)}</h3>
       <p>${safe(product.description)}</p>
+      <span class="product-availability ${product.available ? 'available' : 'sold-out'}">${product.available ? 'Available' : 'Sold Out'}</span>
       <div class="price-row">
         <div class="price">$${product.price.toFixed(2)}</div>
-        <a class="add-btn" href="category-variants.html?category=earrings&collection=${encodeURIComponent(product.collectionId || product.id)}">View Options${product.colorCount > 1 ? ` (${product.colorCount} colors)` : ''}</a>
+        ${product.available ? `<a class="add-btn" href="category-variants.html?category=earrings&collection=${encodeURIComponent(product.collectionId || product.id)}">View Options${product.colorCount > 1 ? ` (${product.colorCount} colors)` : ''}</a>` : '<button class="add-btn sold-out" data-sold-out="true" disabled type="button">Sold Out</button>'}
       </div>
     </article>`;
 
@@ -712,7 +714,7 @@
       if (heroImage && firstHeroImage) heroImage.src = firstHeroImage;
       if (!Array.isArray(products)) throw new Error('The product API did not return a product list.');
 
-      const nextSignature = JSON.stringify(products.map(item => ({ id:item.id, images:item.images, arImage:item.arImage, boxGif:item.boxGif, price:item.price, name:item.name })));
+      const nextSignature = JSON.stringify(products.map(item => ({ id:item.id, images:item.images, arImage:item.arImage, boxGif:item.boxGif, price:item.price, name:item.name, available:item.available !== false })));
       if (force && nextSignature === lastCatalogSignature) return;
       lastCatalogSignature = nextSignature;
 

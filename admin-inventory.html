@@ -1,0 +1,171 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="robots" content="noindex,nofollow,noarchive">
+  <title>Inventory Admin | The Global Rani</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@600;700;800&family=Inter:wght@400;600;700;800&display=swap" rel="stylesheet">
+  <style>
+    :root{--ivory:#fffaf2;--gold:#b9852f;--gold2:#e3b75d;--ruby:#9e1533;--green:#08795d;--ink:#34210e;--muted:#775f49;--line:rgba(185,133,47,.25);--shadow:0 22px 60px rgba(70,38,12,.15)}
+    *{box-sizing:border-box}body{margin:0;min-height:100vh;font-family:Inter,Arial,sans-serif;color:var(--ink);background:radial-gradient(circle at 15% 5%,rgba(227,183,93,.28),transparent 24%),linear-gradient(135deg,#fff8ee,#fffefb 48%,#f5e5cf)}
+    .top{padding:9px 18px;text-align:center;background:linear-gradient(90deg,var(--ruby),var(--gold),var(--green));color:white;font-size:12px;font-weight:900;letter-spacing:.16em;text-transform:uppercase}
+    header{display:flex;align-items:center;justify-content:space-between;gap:18px;padding:15px max(20px,calc((100vw - 1180px)/2));background:rgba(255,253,248,.88);border-bottom:1px solid var(--line);backdrop-filter:blur(14px)}
+    .brand{display:flex;align-items:center;gap:12px;color:var(--gold);text-decoration:none;font-family:Cinzel,serif;font-size:21px;font-weight:800}.brand img{width:52px;height:52px;border-radius:50%;object-fit:cover;box-shadow:0 8px 20px rgba(185,133,47,.25)}
+    main{width:min(1180px,calc(100% - 32px));margin:44px auto 80px}.hero{text-align:center;margin-bottom:28px}.eyebrow{color:var(--ruby);font-size:12px;font-weight:900;letter-spacing:.2em;text-transform:uppercase}.hero h1{margin:10px 0 8px;font-family:Cinzel,serif;font-size:clamp(34px,6vw,62px);color:var(--ruby)}.hero p{max-width:720px;margin:auto;color:var(--muted);line-height:1.65}
+    .panel{padding:26px;border:1px solid var(--line);border-radius:28px;background:rgba(255,255,255,.76);box-shadow:var(--shadow)}.login-panel{max-width:560px;margin:auto}.field{display:grid;gap:7px;margin:14px 0}.field label{font-weight:800;color:var(--ruby);font-size:13px}.field input,.field select{width:100%;padding:13px 15px;border:1px solid rgba(185,133,47,.36);border-radius:15px;background:#fff;font:inherit;color:var(--ink);outline:none}.field input:focus,.field select:focus{border-color:var(--ruby);box-shadow:0 0 0 4px rgba(158,21,51,.08)}
+    button{border:0;border-radius:999px;padding:12px 18px;font:inherit;font-weight:900;cursor:pointer}.primary{color:white;background:linear-gradient(135deg,var(--ruby),var(--gold));box-shadow:0 10px 24px rgba(158,21,51,.2)}.secondary{color:white;background:linear-gradient(135deg,var(--green),var(--gold))}.ghost{color:var(--ruby);background:rgba(158,21,51,.08)}button:disabled{cursor:not-allowed;opacity:.55;box-shadow:none}.status{min-height:22px;margin:13px 0 0;font-weight:800;color:var(--green)}.status.error{color:var(--ruby)}
+    [hidden]{display:none!important}.admin-head{display:flex;align-items:center;justify-content:space-between;gap:15px;margin-bottom:18px;flex-wrap:wrap}.admin-head h2{margin:0;font-family:Cinzel,serif;color:var(--ruby)}.admin-actions{display:flex;gap:10px;flex-wrap:wrap}.filters{display:grid;grid-template-columns:minmax(220px,1fr) 220px;gap:12px;margin:18px 0}.summary{font-weight:800;color:var(--muted);margin-bottom:14px}
+    .grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:18px}.product{overflow:hidden;border:1px solid var(--line);border-radius:22px;background:#fff;box-shadow:0 14px 34px rgba(70,38,12,.09)}.product img{display:block;width:100%;aspect-ratio:1/1;object-fit:cover;background:#f6ead9}.product-copy{padding:16px}.type{font-size:11px;font-weight:900;letter-spacing:.11em;text-transform:uppercase;color:var(--gold)}.product h3{margin:7px 0 5px;font-family:Cinzel,serif;font-size:18px}.product-id{font-size:11px;color:var(--muted);overflow-wrap:anywhere}.availability{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-top:14px}.badge{padding:7px 10px;border-radius:999px;font-size:12px;font-weight:900}.badge.available{color:var(--green);background:rgba(8,121,93,.11)}.badge.sold-out{color:var(--ruby);background:rgba(158,21,51,.11)}.toggle{padding:9px 12px;font-size:12px}.empty{grid-column:1/-1;padding:36px;text-align:center;color:var(--muted);font-weight:800}
+    @media(max-width:900px){.grid{grid-template-columns:repeat(2,minmax(0,1fr))}}@media(max-width:620px){header{padding:10px 14px}.brand span{font-size:16px}.filters,.grid{grid-template-columns:1fr}.panel{padding:18px}.admin-actions{width:100%}.admin-actions button{flex:1}}
+  </style>
+</head>
+<body>
+  <div class="top">Private Inventory Management</div>
+  <header>
+    <a class="brand" href="index.html"><img alt="The Global Rani logo" src="https://ik.imagekit.io/k0wpvuatq/global-rani-logo.png"><span>The Global Rani</span></a>
+    <a class="ghost" href="index.html" style="text-decoration:none;padding:10px 15px;border-radius:999px;font-weight:900">View Store</a>
+  </header>
+  <main>
+    <section class="hero"><div class="eyebrow">Owner Access Only</div><h1>Inventory Admin</h1><p>Change each product between Available and Sold Out. Customers can see the status, but only an authorized admin account can change it.</p></section>
+
+    <section class="panel login-panel" id="loginPanel">
+      <h2 style="font-family:Cinzel,serif;color:var(--ruby);margin-top:0">Admin Sign In</h2>
+      <form id="loginForm">
+        <div class="field"><label for="email">Admin email</label><input id="email" type="email" autocomplete="username" required></div>
+        <div class="field"><label for="password">Password</label><input id="password" type="password" autocomplete="current-password" required minlength="6"></div>
+        <button class="primary" id="loginButton" type="submit">Sign In Securely</button>
+      </form>
+      <p class="status" id="loginStatus" role="status"></p>
+    </section>
+
+    <section class="panel" id="adminPanel" hidden>
+      <div class="admin-head">
+        <div><div class="eyebrow">Authenticated Admin</div><h2>Product Availability</h2><div id="adminEmail" style="margin-top:5px;color:var(--muted);font-weight:700"></div></div>
+        <div class="admin-actions"><button class="secondary" id="refreshButton" type="button">Refresh Products</button><button class="ghost" id="logoutButton" type="button">Log Out</button></div>
+      </div>
+      <div class="filters"><div class="field" style="margin:0"><label for="search">Search products</label><input id="search" type="search" placeholder="Name or product ID"></div><div class="field" style="margin:0"><label for="category">Category</label><select id="category"><option value="all">All categories</option><option value="jewelry">Jewelry Sets</option><option value="earrings">Earrings</option><option value="bangles">Bangles &amp; Kadas</option><option value="color">Color Collections</option></select></div></div>
+      <div class="summary" id="summary"></div>
+      <p class="status" id="adminStatus" role="status"></p>
+      <div class="grid" id="productGrid"></div>
+    </section>
+  </main>
+
+  <script type="module">
+    import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js';
+    import { getAuth, onAuthStateChanged, signInWithEmailAndPassword, signOut, setPersistence, browserSessionPersistence, getIdToken } from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js';
+
+    const firebaseConfig = {
+      apiKey: ['AI', 'zaSyBise9pqTYgQwmG-xOVZQ0-30j1EvcgDng'].join(''),
+      authDomain: 'the-global-rani-website.firebaseapp.com',
+      projectId: 'the-global-rani-website',
+      storageBucket: 'the-global-rani-website.firebasestorage.app',
+      messagingSenderId: '603989663669',
+      appId: '1:603989663669:web:24c32f6c1bce81a20803fc'
+    };
+    const auth = getAuth(initializeApp(firebaseConfig));
+    await setPersistence(auth, browserSessionPersistence);
+
+    const loginPanel = document.getElementById('loginPanel');
+    const adminPanel = document.getElementById('adminPanel');
+    const loginStatus = document.getElementById('loginStatus');
+    const adminStatus = document.getElementById('adminStatus');
+    const productGrid = document.getElementById('productGrid');
+    const search = document.getElementById('search');
+    const category = document.getElementById('category');
+    let products = [];
+    let activeUser = null;
+
+    const safe = value => String(value || '').replace(/[&<>"']/g, char => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[char]));
+    const catalogRequests = [
+      { type:'jewelry', url:'/api/jewelry-products' },
+      { type:'earrings', url:'/api/earring-products' },
+      { type:'bangles', url:'/api/bangle-products' },
+      ...['pink','red','green','blue','gold','purple','black','multicolor'].map(color => ({ type:'color', url:`/api/color-products?color=${color}` }))
+    ];
+
+    async function adminFetch(url, options = {}) {
+      if (!activeUser) throw new Error('Please sign in again.');
+      const token = await getIdToken(activeUser, true);
+      const response = await fetch(url, { ...options, cache:'no-store', headers:{ ...(options.headers || {}), Authorization:`Bearer ${token}` } });
+      const body = await response.json().catch(() => ({}));
+      if (!response.ok) throw new Error(body.error || `Request failed (${response.status}).`);
+      return body;
+    }
+
+    function visibleProducts() {
+      const query = search.value.trim().toLowerCase();
+      return products.filter(product => (category.value === 'all' || product.productType === category.value) && (!query || `${product.name} ${product.id}`.toLowerCase().includes(query)));
+    }
+
+    function render() {
+      const visible = visibleProducts();
+      document.getElementById('summary').textContent = `${visible.length} of ${products.length} products shown`;
+      if (!visible.length) { productGrid.innerHTML = '<div class="empty">No matching products found.</div>'; return; }
+      productGrid.innerHTML = visible.map(product => {
+        const available = product.available !== false;
+        return `<article class="product" data-key="${safe(product.productType)}:${safe(product.id)}">
+          <img alt="${safe(product.name)}" loading="lazy" decoding="async" src="${safe(product.image || product.images?.[0] || '')}">
+          <div class="product-copy"><div class="type">${safe(product.productType)}</div><h3>${safe(product.name)}</h3><div class="product-id">${safe(product.id)}</div>
+          <div class="availability"><span class="badge ${available ? 'available' : 'sold-out'}">${available ? 'Available' : 'Sold Out'}</span><button class="toggle ${available ? 'ghost' : 'secondary'}" data-type="${safe(product.productType)}" data-id="${safe(product.id)}" data-name="${safe(product.name)}" data-next="${available ? 'false' : 'true'}" type="button">Mark ${available ? 'Sold Out' : 'Available'}</button></div></div>
+        </article>`;
+      }).join('');
+    }
+
+    async function loadProducts() {
+      adminStatus.className = 'status'; adminStatus.textContent = 'Loading products…';
+      const results = await Promise.allSettled(catalogRequests.map(async request => {
+        const response = await fetch(`${request.url}${request.url.includes('?') ? '&' : '?'}_=${Date.now()}`, { cache:'no-store' });
+        if (!response.ok) throw new Error(`${request.type} catalog failed`);
+        const body = await response.json();
+        return (Array.isArray(body.products) ? body.products : []).map(product => ({ ...product, productType:request.type }));
+      }));
+      const combined = results.flatMap(result => result.status === 'fulfilled' ? result.value : []);
+      const unique = new Map();
+      combined.forEach(product => unique.set(`${product.productType}:${product.id}`, product));
+      products = [...unique.values()].sort((a,b) => a.name.localeCompare(b.name));
+      adminStatus.textContent = results.some(result => result.status === 'rejected') ? 'Some product folders could not be loaded. The available products are shown below.' : 'Inventory is up to date.';
+      render();
+    }
+
+    document.getElementById('loginForm').addEventListener('submit', async event => {
+      event.preventDefault();
+      const button = document.getElementById('loginButton'); button.disabled = true;
+      loginStatus.className = 'status'; loginStatus.textContent = 'Signing in…';
+      try { await signInWithEmailAndPassword(auth, document.getElementById('email').value.trim(), document.getElementById('password').value); }
+      catch (error) { loginStatus.className = 'status error'; loginStatus.textContent = 'Sign-in failed. Check your admin email and password.'; button.disabled = false; }
+    });
+
+    productGrid.addEventListener('click', async event => {
+      const button = event.target.closest('.toggle'); if (!button) return;
+      button.disabled = true; adminStatus.className = 'status'; adminStatus.textContent = `Updating ${button.dataset.name}…`;
+      try {
+        const available = button.dataset.next === 'true';
+        await adminFetch('/api/admin-inventory', { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({ productType:button.dataset.type, productId:button.dataset.id, productName:button.dataset.name, available }) });
+        const product = products.find(item => item.productType === button.dataset.type && item.id === button.dataset.id);
+        if (product) product.available = available;
+        adminStatus.textContent = `${button.dataset.name} is now ${available ? 'Available' : 'Sold Out'}.`;
+        render();
+      } catch (error) { adminStatus.className = 'status error'; adminStatus.textContent = error.message; button.disabled = false; }
+    });
+
+    search.addEventListener('input', render); category.addEventListener('change', render);
+    document.getElementById('refreshButton').addEventListener('click', loadProducts);
+    document.getElementById('logoutButton').addEventListener('click', () => signOut(auth));
+
+    onAuthStateChanged(auth, async user => {
+      activeUser = user;
+      if (!user) { loginPanel.hidden = false; adminPanel.hidden = true; document.getElementById('loginButton').disabled = false; return; }
+      loginStatus.textContent = 'Verifying admin access…';
+      try {
+        const access = await adminFetch('/api/admin-inventory');
+        loginPanel.hidden = true; adminPanel.hidden = false; document.getElementById('adminEmail').textContent = access.email; await loadProducts();
+      } catch (error) {
+        loginPanel.hidden = false; adminPanel.hidden = true; loginStatus.className = 'status error'; loginStatus.textContent = error.message; await signOut(auth);
+      }
+    });
+  </script>
+</body>
+</html>

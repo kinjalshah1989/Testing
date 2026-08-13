@@ -465,7 +465,8 @@
       boxGif: raw.boxGif || '',
       collectionId: raw.collectionId || raw.id || raw.slug || '',
       colorCount: Number(raw.colorCount || (Array.isArray(raw.variants) ? raw.variants.length : 0)) || 0,
-      variants: Array.isArray(raw.variants) ? raw.variants : []
+      variants: Array.isArray(raw.variants) ? raw.variants : [],
+      available: raw.available !== false
     };
   }
 
@@ -493,9 +494,10 @@
       <span class="tag">${safe(product.category)}</span>
       <h3>${safe(product.name)}</h3>
       <p>${safe(product.description)}</p>
+      <span class="product-availability ${product.available ? 'available' : 'sold-out'}">${product.available ? 'Available' : 'Sold Out'}</span>
       <div class="price-row">
         <div class="price">$${product.price.toFixed(2)}</div>
-        <button class="add-btn" type="button" data-open-set-gif="${safe(product.id)}" aria-haspopup="dialog">${isColorMode ? 'View Jewelry' : 'View Set'}</button>
+        <button class="add-btn${product.available ? '' : ' sold-out'}" type="button" ${product.available ? `data-open-set-gif="${safe(product.id)}" aria-haspopup="dialog"` : 'data-sold-out="true" disabled'}>${product.available ? (isColorMode ? 'View Jewelry' : 'View Set') : 'Sold Out'}</button>
       </div>
     </article>`;
 
@@ -634,7 +636,7 @@
     const button = event.target.closest('[data-open-set-gif]');
     if (!button) return;
     const product = productRegistry.get(button.dataset.openSetGif);
-    if (!product) return;
+    if (!product || product.available === false) return;
 
     const oldGif = document.getElementById('gulabiSetGif');
     const freezeFrame = document.getElementById('gulabiSetFreezeFrame');
@@ -642,6 +644,9 @@
     modal.setAttribute('aria-label', product.name + ' jewelry box animation');
     modal.querySelector('.set-gif-actions').setAttribute('aria-label', product.name + ' actions');
     const tryOnButton = document.getElementById('gulabiTryItOn');
+    const cartButton = document.getElementById('gulabiAddToCart');
+    cartButton.disabled = false;
+    cartButton.textContent = 'Add to Cart';
     const arImage = String(product.arImage || '').trim();
     const hasArImage = Boolean(arImage);
     tryOnButton.textContent = hasArImage ? 'Try It On' : 'Product not available to try-on';
@@ -691,7 +696,7 @@
 
   document.getElementById('gulabiAddToCart').addEventListener('click', function () {
     const product = productRegistry.get(modal.dataset.productSlug);
-    if (!product) return;
+    if (!product || product.available === false) { this.disabled = true; this.textContent = 'Sold Out'; return; }
     let cart = [];
     try { cart = JSON.parse(sessionStorage.getItem('globalRaniCart') || '[]'); } catch (error) {}
     if (!Array.isArray(cart)) cart = [];
@@ -785,7 +790,7 @@
         };
       }
 
-      const nextSignature = JSON.stringify(products.map(item => ({ id:item.id, images:item.images, arImage:item.arImage, boxGif:item.boxGif, price:item.price, name:item.name })));
+      const nextSignature = JSON.stringify(products.map(item => ({ id:item.id, images:item.images, arImage:item.arImage, boxGif:item.boxGif, price:item.price, name:item.name, available:item.available !== false })));
       if (force && nextSignature === lastCatalogSignature) return;
       lastCatalogSignature = nextSignature;
 

@@ -103,3 +103,25 @@ html.quality-page-hidden *::after{
     display:none!important;
   }
 }
+.product-availability {
+  display: inline-flex;
+  align-items: center;
+  width: max-content;
+  margin: 8px 0 2px;
+  padding: 7px 11px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 900;
+  letter-spacing: .04em;
+}
+.product-availability.available { color: #037a5c; background: rgba(3,122,92,.11); }
+.product-availability.sold-out { color: #9e1533; background: rgba(158,21,51,.11); }
+.add-btn.sold-out,
+button[data-sold-out="true"],
+a[data-sold-out="true"] {
+  pointer-events: none !important;
+  cursor: not-allowed !important;
+  opacity: .62 !important;
+  filter: grayscale(.2);
+  box-shadow: none !important;
+}
