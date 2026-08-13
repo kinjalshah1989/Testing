@@ -1,6 +1,9 @@
 [build]
-  command = "true"
-  publish = "."
+  command = "npm run build"
+  publish = "dist"
+
+[build.environment]
+  NODE_VERSION = "22"
 
 [functions]
   directory = "netlify/functions"
@@ -26,3 +29,15 @@
   for = "/assets/global-rani-quality.js"
   [headers.values]
     Cache-Control = "no-store, max-age=0, must-revalidate"
+
+# Preserve serverless API endpoints before the SPA fallback.
+[[redirects]]
+  from = "/api/*"
+  to = "/.netlify/functions/:splat"
+  status = 200
+
+# Existing .html links and category URLs now render through React.
+[[redirects]]
+  from = "/*"
+  to = "/index.html"
+  status = 200

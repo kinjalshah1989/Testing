@@ -1,0 +1,4 @@
+html, body, #root, [data-react-page-root="true"] { min-height: 100%; }
+body { margin: 0; }
+.react-migration-error { max-width: 760px; margin: 80px auto; padding: 24px; font-family: Arial, sans-serif; }
+.react-migration-error a { color: inherit; }
